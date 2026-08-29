@@ -66,22 +66,69 @@ A bundle is per-platform and per-build: `SOL_EXTENSION_ABI` is compared for
 equality and refused rather than guessed, so rebuild this whenever `solvm` is
 rebuilt from a newer Solveig. You never rebuild `solvm` to add an extension.
 
-## The messages
+## Reference
+
+Eleven messages, ten of them distinct. Everything that draws answers the screen,
+so calls chain.
+
+### Opening
 
 | | |
 | --- | --- |
-| `sdl:start` | open SDL; fails saying so when it cannot |
-| `sdl:window(title, #width, #height)` | a window and its renderer, as one screen |
-| `sdl:clear(screen, #r, #g, #b)` | |
-| `sdl:colour(screen, #r, #g, #b)` | `color` too; the language spells it one way and its author the other |
-| `sdl:fill(screen, #x, #y, #w, #h)` | |
-| `sdl:line(screen, #x1, #y1, #x2, #y2)` | |
-| `sdl:present(screen)` | show the frame just drawn |
-| `sdl:poll` | the next event, or `nil` when the queue is empty |
-| `sdl:wait(#milliseconds)` | |
-| `sdl:ticks` | milliseconds since `sdl:start` |
+| `sdl:start` | Opens SDL's video subsystem. Answers `true`, or fails with SDL's own message. Calling it twice is harmless; `poll`, `ticks` and `window` fail until it has been called. |
+| `sdl:window(title, #width, #height)` | A window and the renderer that draws into it, as one **screen** — `<sdl screen>` when printed. Falls back to software rendering where there is no acceleration, which is what a headless run gets. |
 
-Everything that draws answers the screen, so calls chain.
+### Drawing
+
+A frame is: clear it, choose a colour, draw, present it.
+
+| | |
+| --- | --- |
+| `sdl:clear(screen, #r, #g, #b)` | Fills the whole screen and sets the draw colour. |
+| `sdl:colour(screen, #r, #g, #b)` | What the next `fill` or `line` uses. `sdl:color` is the same message. |
+| `sdl:fill(screen, #x, #y, #width, #height)` | A solid rectangle. |
+| `sdl:line(screen, #x1, #y1, #x2, #y2)` | |
+| `sdl:present(screen)` | Shows the frame just drawn. Nothing appears until this. |
+
+Components are 0–255; coordinates are pixels from the top left.
+
+### Events
+
+| | |
+| --- | --- |
+| `sdl:poll` | The next event as an object, or `nil` when the queue is empty. |
+
+Answering `nil` rather than blocking is what lets the program own its loop:
+drain what has happened, draw a frame, come back.
+
+| slot | on which kinds |
+| --- | --- |
+| `event:kind` | always — `'quit` `'keyDown` `'keyUp` `'mouseDown` `'mouseUp` `'mouseMove` `'other` |
+| `event:key` | `'keyDown` `'keyUp` — `"Escape"`, `"a"`, `"Left"` |
+| `event:repeat` | `'keyDown` `'keyUp` — `#1` when the key is repeating |
+| `event:x` `event:y` | the three mouse kinds |
+| `event:button` | `'mouseDown` `'mouseUp` |
+
+### Time
+
+| | |
+| --- | --- |
+| `sdl:wait(#milliseconds)` | Answers `nil`. |
+| `sdl:ticks` | Milliseconds since `sdl:start`, as an integer. |
+
+### Failures
+
+Every message checks its own arity and argument types, and names the message:
+
+```
+'fill' expects integers, got float -- a coordinate is written with '#',
+and a float becomes one with 'truncated'
+'clear' expects a screen, got nil
+'poll' before sdl:start
+```
+
+The float message is there because it is the mistake a program actually makes:
+`x` out of a physics step is a float, and `#` is what makes it a coordinate.
 
 ## Events are objects, not dictionaries
 
@@ -136,15 +183,37 @@ A 1024×768 window is about 3MB of pixels, and the foreign cell declares that as
 its footprint — so `--memory` measures the window rather than the pointer to it.
 An extension that declared nothing would let a program open a thousand.
 
-## What is not here
+## How much of SDL2 this is
 
-No textures, no images, no audio, no text rendering, no gamepads, no fullscreen.
-This is a surface to draw on and a queue to read, which is enough to write a
-game loop and was enough to answer the question it was written for: **does a
-second back end need anything the first one did not?**
+**Under two percent**, deliberately. With numbers, since "a subset" could mean
+anything:
 
-It does not. Same header, same ABI, same loader, same foreign cell, and one name
-added to a list.
+| | |
+| --- | --- |
+| `SDL_*` functions exported by libSDL2 | **837** |
+| distinct ones this extension calls | **15** |
+| messages it publishes | **11**, ten distinct |
+
+**What is missing.** No textures and no images, so nothing but solid rectangles
+and lines. No text rendering, no audio, no gamepads, no fullscreen, and no
+immediate keyboard state — only events. You can write Pong. You cannot write
+anything that needs to draw a sprite.
+
+**It is a demonstration that a second back end needs nothing the first one did
+not**, which was the question it was written to answer. It does not.
+
+### Adding more is mechanical
+
+The per-toolkit work is done: the screen's lifetime against the collector, the
+event objects, the argument checking. A new message is a primitive, an arity
+check, a `sol_foreign_handle` call and a line in `sol_extension_init`.
+
+Unlike GTK — 4,299 functions and machine-readable introspection data — SDL2 is
+small enough and regular enough that hand-writing is the right answer all the
+way up. Eight hundred functions, of which a game wants perhaps two hundred.
+
+**Nothing is waiting on it.** The trigger is a program that wants something this
+does not have.
 
 ## Licence
 
