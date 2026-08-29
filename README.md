@@ -51,8 +51,27 @@ every file here would be working around it.
 
 ## Building
 
-Needs SDL2 and a checkout of **Solveig 0.36.0 or later** — the release the
-extension interface arrived in. The build checks, rather than trusting you:
+Needs SDL2 and **[Solveig 0.36.0](https://github.com/hansolovkarlsson/Solveig/releases/tag/v0.36.0)
+or later** — the release the extension interface arrived in.
+
+Either a clone or the release tarball will do. The build reads headers straight
+out of the tree, so an unpacked `solveig-0.36.0/` works as `SOLVEIG` with
+nothing else done to it:
+
+```sh
+curl -LO https://github.com/hansolovkarlsson/Solveig/releases/download/v0.36.0/solveig-0.36.0.tar.gz
+tar xzf solveig-0.36.0.tar.gz && make -C solveig-0.36.0
+
+brew install sdl2                 # macOS
+apt install libsdl2-dev          # Debian, Ubuntu
+
+make SOLVEIG=solveig-0.36.0       # -> build/sdl.so;  default is ../Solveig
+make run SOLVEIG=solveig-0.36.0   # build and bounce a ball
+```
+
+**The version is checked rather than taken on trust**, because the failure it
+prevents is unhelpful: an older checkout has no `solum/extend.h` at all, so the
+compiler says a header is missing and says nothing about why.
 
 ```
 solveig-sdl: found Solveig 0.35.0 under ../Solveig,
@@ -60,23 +79,22 @@ solveig-sdl: found Solveig 0.35.0 under ../Solveig,
   Update that checkout, or point SOLVEIG at a newer one.
 ```
 
-That is a build-time check for *is there an extension interface at all*. The
-run-time half is separate and stays separate: `SOL_EXTENSION_ABI` is compared
-when the bundle loads, and catches a Solveig whose structs moved under a bundle
-built earlier.
+A missing SDL2 is named the same way rather than left to the compiler.
 
-```sh
-brew install sdl2                 # macOS
-apt install libsdl2-dev           # Debian, Ubuntu
+**That is a build-time check for one thing only** — *is there an extension
+interface at all*. The run-time half is separate and stays separate: a bundle is
+per-platform and per-build, and `SOL_EXTENSION_ABI` is compared for equality
+when it loads, never guessed, since `SolValue` is passed by value and
+`SolObject`'s layout is exposed. So rebuild this whenever `solvm` is rebuilt
+from a newer Solveig:
 
-make                              # -> build/sdl.so
-make SOLVEIG=/path/to/Solveig     # if it is not ../Solveig
-make run                          # build and bounce a ball
+```
+solvm: cannot load extension build/sdl.so: refused ABI 1 --
+built against a different SolVM, rebuild it against this one
 ```
 
-A bundle is per-platform and per-build: `SOL_EXTENSION_ABI` is compared for
-equality and refused rather than guessed, so rebuild this whenever `solvm` is
-rebuilt from a newer Solveig. You never rebuild `solvm` to add an extension.
+You never rebuild `solvm` to add an extension. You do rebuild extensions when
+`solvm` changes.
 
 ## Reference
 
