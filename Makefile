@@ -34,6 +34,22 @@ endif
 SDL_CFLAGS = $(shell pkg-config --cflags sdl2 | sed 's/-I/-isystem /g')
 SDL_LIBS   = $(shell pkg-config --libs sdl2)
 
+# The Solveig this is being built against, read from the same header the
+# binaries report their version out of.
+#
+# Checked rather than assumed because the failure it prevents is unhelpful: an
+# older checkout has no solum/extend.h at all, so the compiler says a header is
+# missing and says nothing about why. The version says why.
+#
+# The run-time half is separate and stays separate: SOL_EXTENSION_ABI is
+# compared when the bundle loads, and catches a Solveig whose structs moved
+# under a bundle that was built earlier. This check is only "does this Solveig
+# have an extension interface at all".
+SOLVEIG_MINIMUM = 0.36.0
+SOLVEIG_VERSION = $(shell grep SOLUM_VERSION \
+                    $(SOLVEIG)/solum/include/solum/common.h 2>/dev/null \
+                    | tr -d '"' | awk '{print $$3}')
+
 INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
@@ -54,10 +70,15 @@ check:
 	    { echo "solveig-sdl: sdl2 not found by pkg-config."; \
 	      echo "  macOS:  brew install sdl2"; \
 	      echo "  Debian: apt install libsdl2-dev"; exit 1; }
-	@test -f $(SOLVEIG)/solum/include/solum/extend.h || \
-	    { echo "solveig-sdl: no solum/extend.h under $(SOLVEIG)."; \
-	      echo "  Set SOLVEIG to a checkout of Solveig 0.36.0 or later:"; \
+	@test -n "$(SOLVEIG_VERSION)" || \
+	    { echo "solveig-sdl: $(SOLVEIG) is not a Solveig checkout."; \
 	      echo "      make SOLVEIG=/path/to/Solveig"; exit 1; }
+	@echo "$(SOLVEIG_VERSION) $(SOLVEIG_MINIMUM)" \
+	    | awk '{ split($$1, a, "."); split($$2, b, "."); \
+	             exit !(a[1] > b[1] || (a[1] == b[1] && a[2] >= b[2])) }' || \
+	    { echo "solveig-sdl: found Solveig $(SOLVEIG_VERSION) under $(SOLVEIG),"; \
+	      echo "  and the extension interface arrived in $(SOLVEIG_MINIMUM)."; \
+	      echo "  Update that checkout, or point SOLVEIG at a newer one."; exit 1; }
 
 run: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/bounce.sol
