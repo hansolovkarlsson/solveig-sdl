@@ -1,6 +1,6 @@
 # solveig-sdl
 
-An SDL2 surface for [Solum](https://github.com/hansolovkarlsson/Solveig), loaded
+An SDL2 surface for [Solveig](https://github.com/hansolovkarlsson/Solveig), loaded
 at run time.
 
 ```sh

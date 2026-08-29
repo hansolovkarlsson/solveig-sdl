@@ -1,4 +1,4 @@
-/* sdl.c -- an SDL2 surface for Solum, loaded at run time.
+/* sdl.c -- an SDL2 surface for Solveig, loaded at run time.
  *
  *     solvm --extension=build/sdl.so program.sob
  *
