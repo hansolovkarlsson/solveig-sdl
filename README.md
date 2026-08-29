@@ -75,7 +75,7 @@ compiler says a header is missing and says nothing about why.
 
 ```
 solveig-sdl: found Solveig 0.35.0 under ../Solveig,
-  and the extension interface arrived in 0.36.0.
+  and this needs 0.36.0 or later.
   Update that checkout, or point SOLVEIG at a newer one.
 ```
 

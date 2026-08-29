@@ -77,7 +77,7 @@ check:
 	    | awk '{ split($$1, a, "."); split($$2, b, "."); \
 	             exit !(a[1] > b[1] || (a[1] == b[1] && a[2] >= b[2])) }' || \
 	    { echo "solveig-sdl: found Solveig $(SOLVEIG_VERSION) under $(SOLVEIG),"; \
-	      echo "  and the extension interface arrived in $(SOLVEIG_MINIMUM)."; \
+	      echo "  and this needs $(SOLVEIG_MINIMUM) or later."; \
 	      echo "  Update that checkout, or point SOLVEIG at a newer one."; exit 1; }
 
 run: all
