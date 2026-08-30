@@ -111,23 +111,26 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 **The Mandelbrot is the one that says something about this binding**, and two
 things in it are worth reading for reasons that are not the fractal.
 
-**It presents on a clock rather than on a row.** `sdl:present` waits for the
-display — about 8ms here — so presenting each of 480 rows would spend four
-seconds a frame doing nothing at all. Showing the buffer at most every 16ms
-costs one `sdl:ticks` per row, and on that program it is worth more than the
-difference between two releases of the VM underneath it. **A binding that hides
-`present` could not have been fixed from the program**, which is the argument
-for this shape of surface in one measurement.
+**A frame is all or nothing.** `sdl:present` waits for the display — about 8ms
+here — but the thing worth knowing is that it does not *keep* what was drawn:
+the buffer handed back for the next frame holds undefined memory, not the
+picture just shown. So a half-drawn picture cannot be shown at all. The first
+version of this example presented every 16ms to show progress and drew bands of
+stale video memory with fractal in between, which is what the noise was.
+**Nothing is presented until a pass has covered every pixel.**
 
-**It draws the picture four times, coarse to fine** — 8×8 blocks, then 4×4,
-2×2, 1×1. The first pass costs a sixty-fourth of the last and puts a
-recognisable set up immediately, and because each pass drains the event queue
-between rows, a click never waits for a finished render. That is `sdl:poll`
-answering `nil` doing exactly the job it exists for: the program decides when to
-look, and nothing calls back into it.
+**So it draws the whole picture five times, coarse to fine** — 16×16 blocks,
+then 8, 4, 2, 1. Each pass is a complete frame and can therefore be shown; the
+first costs a 256th of the last and is up in about ten milliseconds. That is how
+it feels progressive without ever presenting a partial frame.
+
+A click still never waits for a finished render, because each pass drains the
+queue between rows and an abandoned pass is dropped rather than shown. That is
+`sdl:poll` answering `nil` doing the job it exists for: the program decides when
+to look, and nothing calls back into it.
 
 Both want an optimised Solveig. The default `make` there is `-g` with no
-optimiser, and the four passes take 13 seconds against 2.9.
+optimiser, and the five passes take 10.2 seconds against 2.2.
 
 ## Reference
 

@@ -9,19 +9,25 @@
 ;
 ; Two things here are worth reading for reasons that are not the fractal.
 ;
-; **It presents on a clock, not on a row.** `sdl:present` waits for the
-; display -- about 8ms -- so presenting each of 480 rows would spend four
-; seconds a frame doing nothing. Showing the buffer at most every 16ms costs
-; one `sdl:ticks` per row and is the difference between a demo and a slideshow.
+; **A frame is all or nothing, and that is the thing to know.** `sdl:present`
+; does not keep what was drawn: the buffer it hands back for the next frame
+; holds undefined memory, not the picture just shown. So a half-drawn picture
+; cannot be shown at all. Presenting every so often to "show progress" puts up
+; one strip of fractal and stale video memory everywhere else, which looks
+; exactly like the noise it is. **Nothing is presented here until a pass has
+; covered every pixel.**
 ;
-; **It draws the picture four times, coarse to fine.** A pass of 8x8 blocks
-; costs a 64th of the full one and puts a recognisable picture up immediately;
-; each finer pass replaces it. The whole sequence costs about a third more than
-; going straight to single pixels, and it means a click never waits for a
-; finished render -- the passes check for events between rows and abandon.
+; **So it draws the whole picture five times, coarse to fine** -- 16x16 blocks,
+; then 8, 4, 2, 1. Each pass is a complete frame and can therefore be shown; the
+; first costs a 256th of the last and is up in about ten milliseconds, and each
+; finer one replaces it. That is what makes this feel progressive without ever
+; presenting a partial frame.
+;
+; A click still never waits for a finished render: the passes drain the event
+; queue between rows and abandon, and an abandoned pass is simply not shown.
 ;
 ; **Build Solveig with the optimiser for this one.** The default `make` is
-; `-g` with none, and the four passes take 13 seconds against 2.9 -- which is
+; `-g` with none, and the five passes take 10.2 seconds against 2.2 -- which is
 ; a demo you wait for against one you play with:
 ;
 ;     make clean && make CFLAGS="-std=c11 -Wall -Wextra -Wpedantic -O2"
@@ -53,8 +59,7 @@ zr := 0.0.     zi := 0.0.
 zr2 := 0.0.    zi2 := 0.0.
 it := #0.
 t := #0.       r := #0.     g := #0.     b := #0.
-step := #8.
-lastPresent := #0.
+step := #16.
 abandon := false.
 running := true.
 event := nil.
@@ -101,6 +106,9 @@ pump := {
 ; One pass over the picture at the current block size.
 
 renderPass := {
+    ; the buffer starts undefined, so a pass that ever failed to cover a pixel
+    ; would leave video memory showing. It costs nothing to be sure.
+    sdl:clear(screen, #0, #0, #0).
     pixelSize := @expr(scale / width:asFloat).
     maxIter := @expr(baseIter + depth * #30).
     py := #0.
@@ -121,16 +129,12 @@ renderPass := {
             sdl:fill(screen, px, py, step, step).
             px := @expr(px + step) }).
 
-        ; the row being worked on, so a slow pass looks like progress
-        sdl:colour(screen, #255, #255, #255).
-        sdl:line(screen, #0, @expr(py + step), width, @expr(py + step)).
-
-        @expr(sdl:ticks - lastPresent > #16):ifTrue({
-            sdl:present(screen).
-            lastPresent := sdl:ticks }).
         pump:value.
         py := @expr(py + step) }).
-    sdl:present(screen) }.
+
+    ; Complete, so it can be shown. An abandoned pass is a partial frame and is
+    ; dropped rather than presented -- the pass that restarts will show one.
+    abandon:equals(false):ifTrue({ sdl:present(screen) }) }.
 
 ; ---------------------------------------------------------------------------
 ; Coarse to fine, and start again whenever the view moves.
@@ -139,7 +143,7 @@ renderPass := {
 
 { running }:whileTrue({
     abandon := false.
-    step := #8.
+    step := #16.
     { @expr(step > #0):and({ abandon:equals(false) }) }:whileTrue({
         renderPass:value.
         step := @expr(step / #2) }).
