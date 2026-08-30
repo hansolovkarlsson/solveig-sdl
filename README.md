@@ -96,6 +96,39 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
+## The two examples
+
+| | |
+| --- | --- |
+| [`examples/bounce.sol`](examples/bounce.sol) | a ball, a wall, and the smallest loop that owns itself |
+| [`examples/mandelbrot.sol`](examples/mandelbrot.sol) | an explorer — click to zoom in, right-click out, `r` to reset, Escape to quit |
+
+```sh
+../Solveig/bin/solas examples/mandelbrot.sol -o examples/mandelbrot.sob
+../Solveig/bin/solvm --extension=build/sdl.so examples/mandelbrot.sob
+```
+
+**The Mandelbrot is the one that says something about this binding**, and two
+things in it are worth reading for reasons that are not the fractal.
+
+**It presents on a clock rather than on a row.** `sdl:present` waits for the
+display — about 8ms here — so presenting each of 480 rows would spend four
+seconds a frame doing nothing at all. Showing the buffer at most every 16ms
+costs one `sdl:ticks` per row, and on that program it is worth more than the
+difference between two releases of the VM underneath it. **A binding that hides
+`present` could not have been fixed from the program**, which is the argument
+for this shape of surface in one measurement.
+
+**It draws the picture four times, coarse to fine** — 8×8 blocks, then 4×4,
+2×2, 1×1. The first pass costs a sixty-fourth of the last and puts a
+recognisable set up immediately, and because each pass drains the event queue
+between rows, a click never waits for a finished render. That is `sdl:poll`
+answering `nil` doing exactly the job it exists for: the program decides when to
+look, and nothing calls back into it.
+
+Both want an optimised Solveig. The default `make` there is `-g` with no
+optimiser, and the four passes take 13 seconds against 2.9.
+
 ## Reference
 
 Eleven messages, ten of them distinct. Everything that draws answers the screen,

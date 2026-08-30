@@ -2,6 +2,7 @@
 #
 #   make                build build/sdl.so
 #   make run            build it and run examples/bounce.sol
+#   make mandelbrot     build it and run examples/mandelbrot.sol
 #   make clean
 #
 # This is an *extension*, so it is not part of Solveig and does not build with
@@ -54,7 +55,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run clean check
+.PHONY: all run mandelbrot clean check
 
 all: $(TARGET)
 
@@ -82,6 +83,10 @@ check:
 
 run: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/bounce.sol
+
+# The other example. It wants an optimised Solveig -- see the note in the file.
+mandelbrot: all
+	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/mandelbrot.sol
 
 clean:
 	rm -rf $(BUILD)
