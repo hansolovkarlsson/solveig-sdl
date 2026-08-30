@@ -2,6 +2,7 @@
 #
 #   make                build build/sdl.so
 #   make run            build it and run examples/bounce.sol
+#   make bounce         the same, said by name
 #   make circles        build it and run examples/circles.sol
 #   make mandelbrot     build it and run examples/mandelbrot.sol
 #   make clean
@@ -56,7 +57,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run circles mandelbrot clean check
+.PHONY: all run bounce circles mandelbrot clean check
 
 all: $(TARGET)
 
@@ -82,7 +83,9 @@ check:
 	      echo "  and this needs $(SOLVEIG_MINIMUM) or later."; \
 	      echo "  Update that checkout, or point SOLVEIG at a newer one."; exit 1; }
 
-run: all
+# `run` is the habit; `bounce` is what the example is called, and reaching for
+# the name rather than the habit should not be an error.
+run bounce: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/bounce.sol
 
 # Bouncing discs, drawn out of lines because there is no circle message.
