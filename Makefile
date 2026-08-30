@@ -2,6 +2,7 @@
 #
 #   make                build build/sdl.so
 #   make run            build it and run examples/bounce.sol
+#   make circles        build it and run examples/circles.sol
 #   make mandelbrot     build it and run examples/mandelbrot.sol
 #   make clean
 #
@@ -55,7 +56,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run mandelbrot clean check
+.PHONY: all run circles mandelbrot clean check
 
 all: $(TARGET)
 
@@ -83,6 +84,10 @@ check:
 
 run: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/bounce.sol
+
+# Bouncing discs, drawn out of lines because there is no circle message.
+circles: all
+	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/circles.sol
 
 # The other example. It wants an optimised Solveig -- see the note in the file.
 mandelbrot: all

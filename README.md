@@ -96,17 +96,30 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The two examples
+## The three examples
 
 | | |
 | --- | --- |
 | [`examples/bounce.sol`](examples/bounce.sol) | a ball, a wall, and the smallest loop that owns itself |
+| [`examples/circles.sol`](examples/circles.sol) | bouncing discs — click to add one, space to clear, Escape to quit |
 | [`examples/mandelbrot.sol`](examples/mandelbrot.sol) | an explorer — click to zoom in, right-click out, `r` to reset, Escape to quit |
 
 ```sh
 ../Solveig/bin/solas examples/mandelbrot.sol -o examples/mandelbrot.sob
 ../Solveig/bin/solvm --extension=build/sdl.so examples/mandelbrot.sob
 ```
+
+**`circles.sol` draws a shape this binding does not have.** There is no
+`sdl:circle`: the eleven messages draw rectangles and lines, so a disc is
+something the program works out — for each of its rows, half the width is the
+square root of `r² - dy²`, and that row is one `sdl:line`. Six lines of Solveig,
+about sixty calls for a ball of thirty.
+
+It stays that way deliberately. A `circle` message would be a few dozen lines of
+C and no program had asked for one until that file. **One customer, satisfied in
+six lines of the language, is not a reason to grow a surface** — every later back
+end would then have to match it, and a `draw`-style binding has no circle to
+match with.
 
 **The Mandelbrot is the one that says something about this binding**, and two
 things in it are worth reading for reasons that are not the fractal.
