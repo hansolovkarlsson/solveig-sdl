@@ -103,7 +103,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The thirteen examples, and the engine under ten of them
+## The fourteen examples, and the engine under eleven of them
 
 | | |
 | --- | --- |
@@ -120,6 +120,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/missile.sol`](examples/missile.sol) | the eighth game: the mouse and three buttons, six cities and three bases, missiles that split, bombers, smart bombs, the count, the 1980 rules |
 | [`examples/centipede.sol`](examples/centipede.sol) | the ninth game: the mushroom field, the centipede that splits, the spider, the flea, the scorpion and its poison, the 1981 rules |
 | [`examples/scramble.sol`](examples/scramble.sol) | the tenth game: a world wider than the screen, six stages of ground made ahead of the camera, fuel, rockets, the base, the 1981 rules |
+| [`examples/defender.sol`](examples/defender.sol) | the eleventh game: a planet that wraps, the scanner, landers that steal humanoids and become mutants, baiters, bombers, pods, smart bombs, hyperspace, the 1981 rules |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, the colour in use, a rect and a grid, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -386,6 +387,35 @@ game's and the first thing a game has wanted that the engine cannot say,
 until a second game scrolls; and the reward at every so many points, five
 games' but wanting `score` and `lives` in the engine, which every game
 claims for itself.
+
+**`defender.sol` is the eleventh game, the second whose world is wider than
+the screen, and the first with two views of it.** The 1981 rules, most of
+them: a planet six screens round that wraps, ten humanoids on it, landers
+that come down to carry one off and become mutants at the top, the humanoid
+falling when its lander is shot, to be caught for 500 and set down for 500,
+baiters when a wave drags, bombers and their mines, pods and their swarmers,
+a smart bomb that takes the screen, hyperspace, the planet lost with the
+last humanoid and every lander a mutant until the fifth wave after. The
+header predicted that the camera is here a second time and harder, the
+view leading the ship the way it faces and the scanner a second camera on
+the same world at another scale, so `toScreen` and `toScanner` are the
+blocks every paint goes through; that the ship is the first with inertia
+under a key, a `mover` bare and not a `craft`; that a humanoid attached to
+its lander or to the ship is a slot and not an engine question; and that
+the binding would be asked for nothing. Checked by a scenario with the
+ship's hands off, which found that a lander could never reach a humanoid
+because a line meant to keep them off the ground held them sixteen pixels
+short of a pick-up; and, with that fixed, by a self-playing copy through
+seventeen waves with the planet lost and given back, and mortal to the game
+over. What the reading of eleven says is for that reading.
+
+**Wanted, later, and not yet a trigger.** Two things the games after these
+will ask this binding for, and the rule below still applies to each: a game
+controller, since every cabinet here had a stick and the arrows are what
+stands in for it; and more of the sound, a second channel, a volume, a note
+that is not a square wave, since one `beep` has carried eleven games and a
+tune, and would not carry a console's music. The famous console games come
+first, and they are what will ask.
 
 ## Reference
 
