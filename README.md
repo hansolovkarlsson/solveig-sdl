@@ -5,8 +5,15 @@ at run time.
 
 ```sh
 make
+../Solveig/bin/solas --expr examples/bounce.sol
 ../Solveig/bin/solvm --extension=build/sdl.so examples/bounce.sob
 ```
+
+**`--expr`, because the examples are written to Solveig's `@expr` region**,
+which its compilers have off unless asked for since 2026-09-14 (after 0.45.0):
+Solveig's declared-operator syntax is Parasol's, and the fixed region stays
+behind a flag for files like these. `solis --expr` is the same, and `make run`
+says it.
 
 ```
 sdl:start.
@@ -113,7 +120,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
-../Solveig/bin/solas examples/mandelbrot.sol -o examples/mandelbrot.sob
+../Solveig/bin/solas --expr examples/mandelbrot.sol -o examples/mandelbrot.sob
 ../Solveig/bin/solvm --extension=build/sdl.so examples/mandelbrot.sob
 ```
 

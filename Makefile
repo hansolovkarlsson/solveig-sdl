@@ -91,42 +91,47 @@ check:
 
 # `run` is the habit; `bounce` is what the example is called, and reaching for
 # the name rather than the habit should not be an error.
+#
+# `--expr`: every example here is written to Solveig's `@expr` region, which
+# is off in its compilers unless asked for, since 2026-09-14. Solveig's own
+# infix lives in Parasol now; the region stays behind the flag for files like
+# these.
 run bounce: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/bounce.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/bounce.sol
 
 # Bouncing discs, drawn out of lines because there is no circle message.
 circles: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/circles.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/circles.sol
 
 # The other example. It wants an optimised Solveig -- see the note in the file.
 mandelbrot: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/mandelbrot.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/mandelbrot.sol
 
 # The game the reference says this binding can write, written to check it.
 pong: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/pong.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/pong.sol
 
 # The second game, written whole rather than over Pong's parts, so that what
 # the two share can be read off rather than guessed at.
 breakout: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/breakout.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/breakout.sol
 
 # The third game, the first over the engine from the start, and the first
 # drawn with lines.
 asteroids: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/asteroids.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/asteroids.sol
 
 # The fourth game: pictures, out of fills, and a measurement that says so.
 invaders: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/invaders.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/invaders.sol
 
 # The fifth game, the second drawn with lines, and the first with a force.
 spacewar: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/spacewar.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/spacewar.sol
 
 # The sixth game, the first that is not a fight, and the first with words.
 lander: all
-	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/lander.sol
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/lander.sol
 
 clean:
 	rm -rf $(BUILD)
