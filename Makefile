@@ -7,6 +7,7 @@
 #   make mandelbrot     build it and run examples/mandelbrot.sol
 #   make pong           build it and play
 #   make breakout       build it and play the second game
+#   make asteroids      build it and play the third
 #   make clean
 #
 # This is an *extension*, so it is not part of Solveig and does not build with
@@ -59,7 +60,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot pong breakout clean check
+.PHONY: all run bounce circles mandelbrot pong breakout asteroids clean check
 
 all: $(TARGET)
 
@@ -106,6 +107,11 @@ pong: all
 # the two share can be read off rather than guessed at.
 breakout: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/breakout.sol
+
+# The third game, the first over the engine from the start, and the first
+# drawn with lines.
+asteroids: all
+	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/asteroids.sol
 
 clean:
 	rm -rf $(BUILD)
