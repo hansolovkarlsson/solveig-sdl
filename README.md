@@ -103,7 +103,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The eleven examples, and the engine under eight of them
+## The twelve examples, and the engine under nine of them
 
 | | |
 | --- | --- |
@@ -118,6 +118,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/lander.sol`](examples/lander.sol) | the sixth game: a throttle, a tank, gravity, a line terrain with three pads, a landing judged by speed and angle |
 | [`examples/tetris.sol`](examples/tetris.sol) | the seventh game: the well, seven pieces, the next one shown, levels by the lines, the 1989 rules; the tune |
 | [`examples/missile.sol`](examples/missile.sol) | the eighth game: the mouse and three buttons, six cities and three bases, missiles that split, bombers, smart bombs, the count, the 1980 rules |
+| [`examples/centipede.sol`](examples/centipede.sol) | the ninth game: the mushroom field, the centipede that splits, the spider, the flea, the scorpion and its poison, the 1981 rules |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -327,6 +328,31 @@ dummy drivers that led each shot by its flight time and marked what it had
 fired at, which held six cities for seven waves and reached the bonus city
 twice; and directly, a smart bomb dodging a disc and dying inside one. What
 the reading of eight says is for that reading.
+
+**`centipede.sol` is the ninth game, the second drawn from a grid, and the
+second to move by the mouse or the keys, whichever moved last.** The 1981
+rules: a field of mushrooms four shots each, a centipede that runs sideways
+and drops and turns at a mushroom or an edge and stays in your rows once it
+is there, a segment shot becoming a mushroom and what was behind it growing
+a head, the spider in your rows eating mushrooms for 300, 600 or 900 by
+distance, the flea down a column when your rows run short leaving more, the
+scorpion poisoning what it crosses so that a head that touches it dives,
+every damaged mushroom restored for 5 when a shooter is lost, a shooter more
+every 12,000, a segment fewer and a loose head more each wave. The header
+predicted that the field is a grid of counts as Tetris's well was a grid of
+colours, with the centipede reading it as walls; that a segment is a cell
+and a direction and not a mover, the chain moving by each taking the cell
+of the one ahead; that the three visitors are `mover`s bare as Missile's
+were; that `sprite` carries a third game with ten pictures; that `keys` is
+back and Breakout's rule for the pointer gets its second game; that
+`font:word` draws nothing; and that the binding would be asked for nothing,
+which it was not, and neither was the engine. Checked by a self-playing
+copy under the dummy drivers, which cleared waves when it could not die and
+died to all three visitors when it could, and directly for the poison, the
+dive, the flea's trail and the split. The one rule the copy found wrong was
+not the cabinet's: extra heads came in from the sides too fast for a wave
+ever to end, and come every seven to twelve seconds now. What the reading
+of nine says is for that reading.
 
 ## Reference
 
