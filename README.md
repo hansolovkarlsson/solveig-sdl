@@ -10,7 +10,7 @@ make
 ```
 
 **`--expr`, because the examples are written to Solveig's `@expr` region**,
-which its compilers have off unless asked for since 2026-09-14 (after 0.45.0):
+which its compilers have off unless asked for since 0.46.0 (2026-09-14):
 Solveig's declared-operator syntax is Parasol's, and the fixed region stays
 behind a flag for files like these. `solis --expr` is the same, and `make run`
 says it.
