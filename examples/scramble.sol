@@ -30,7 +30,9 @@
 ; at a screen position and a mover moves in whatever space it is given,
 ; so the movers live in the world and the subtraction happens at the
 ; paint, in one block, and whether that block is one game's or the
-; engine's is the reading's question. That the ground is a table again,
+; engine's is the reading's question. (The reading of twelve answered
+; it, after Defender and Mario: `camera` is the engine's, and so is the
+; box at a mover's position that all three had written.) That the ground is a table again,
 ; but a one-dimensional one and generated ahead of the camera rather than
 ; laid out at the start, which no game has done. That `rect` carries its
 ; fourth game in screen space and nothing in world space, since the
@@ -75,7 +77,6 @@ lifeTone   := tone:make(#1200, #200).
 ; -- the game
 state := 'attract.                   ; 'attract  'flying  'crashing  'over
 score := #0. lives := #0. round := #1. stage := #1. nextLife := lifeEvery.
-cam := 0.0.                          ; the world x at the screen's left edge
 pace := 1.5.                         ; pixels a frame the world moves
 fuel := #0. fuelIn := #0. fuelRate := #28.
 ground := [].                        ; per world column: [floor y, roof y]
@@ -166,10 +167,10 @@ foe:kind := 'rocket. foe:w := #16. foe:h := #16. foe:launched := false. foe:phas
 foe:make := { kind, wx, wy, w, h | | t |
     t := self:new. t:kind := kind. t:x := wx. t:y := wy. t:w := w. t:h := h. t }.
 ; Its box, on the screen.
-foe:box := { rect:make(@expr(self:x - cam):truncated, self:y:truncated, self:w, self:h) }.
+foe:box := { self:via(mover):box(self:w, self:h) }.
 foe:step := {
     self:kind:equals('rocket):ifTrue({
-        self:launched:not:and({ @expr(self:x - cam < 260.0) }):ifTrue({
+        self:launched:not:and({ @expr(self:x - camera:x < 260.0) }):ifTrue({
             self:launched := true. self:vy := -0.5. launchTone:play }).
         self:launched:ifTrue({ self:vy := @expr(self:vy - 0.04). self:move }) }).
     self:kind:equals('ufo):ifTrue({
@@ -177,9 +178,9 @@ foe:step := {
         self:x := @expr(self:x + pace * 0.3).
         self:y := @expr(self:y + self:phase:sin * 1.2) }).
     self:kind:equals('fire):ifTrue({ self:move }).
-    @expr(self:x - cam < -40.0 | self:y < -40.0):ifTrue({ self:alive := false }) }.
+    @expr(self:x - camera:x < -40.0 | self:y < -40.0):ifTrue({ self:alive := false }) }.
 foe:paint := { | sx, sy |
-    sx := @expr(self:x - cam):truncated. sy := self:y:truncated.
+    sx := camera:screenX(self:x). sy := self:y:truncated.
     self:kind:equals('rocket):ifTrue({
         rocketSprite:paint(@expr(sx + #5), sy).
         self:launched:and({ frames:mod(#2):equals(#0) }):ifTrue({ flameSprite:paint(@expr(sx + #5), @expr(sy + #16)) }) }).
@@ -220,7 +221,7 @@ placeAt := { col, st, k, floor | | wx, r |
 ; A fireball, from the right, in the third stage.
 fireIn := #0.
 throwFire := { | f |
-    f := foe:make('fire, @expr(cam + fw + 20.0), @expr(60.0 + rng:fraction * 300.0), #12, #12).
+    f := foe:make('fire, @expr(camera:x + fw + 20.0), @expr(60.0 + rng:fraction * 300.0), #12, #12).
     f:vx := @expr(-(2.0 + rng:fraction * 2.0)). f:vy := @expr(rng:fraction * 1.0 - 0.5).
     foes:add(f) }.
 
@@ -231,18 +232,18 @@ ship := rect:make(#60, #200, #24, #12).
 
 ; A shot: a mover in the world, a short line.
 shot := mover:new.
-shot:make := { | s | s := self:new. s:x := @expr(cam + ship:right:asFloat). s:y := @expr(ship:y:asFloat + 5.0). s:vx := shotSpeed. s }.
-shot:box := { rect:make(@expr(self:x - cam):truncated, self:y:truncated, #8, #2) }.
+shot:make := { | s | s := self:new. s:x := @expr(camera:x + ship:right:asFloat). s:y := @expr(ship:y:asFloat + 5.0). s:vx := shotSpeed. s }.
+shot:box := { self:via(mover):box(#8, #2) }.
 shot:step := { | col |
     self:move.
     col := colAt:value(self:x).
-    @expr(self:x - cam > fw):or({ self:y:truncated:greaterThan(floorAt:value(col)) }):or({ self:y:truncated:lessThan(roofAt:value(col)) }):ifTrue({
+    @expr(self:x - camera:x > fw):or({ self:y:truncated:greaterThan(floorAt:value(col)) }):or({ self:y:truncated:lessThan(roofAt:value(col)) }):ifTrue({
         self:alive := false }) }.
 
 ; A bomb: forward with the ship, then down, and a burst where it lands.
 bomb := mover:new.
-bomb:make := { | b | b := self:new. b:x := @expr(cam + ship:x:asFloat + 8.0). b:y := @expr(ship:bottom:asFloat). b:vx := @expr(pace + 2.5). b:vy := 0.0. b }.
-bomb:box := { rect:make(@expr(self:x - cam):truncated, self:y:truncated, #6, #6) }.
+bomb:make := { | b | b := self:new. b:x := @expr(camera:x + ship:x:asFloat + 8.0). b:y := @expr(ship:bottom:asFloat). b:vx := @expr(pace + 2.5). b:vy := 0.0. b }.
+bomb:box := { self:via(mover):box(#6, #6) }.
 bomb:step := { | col |
     self:vy := @expr(self:vy + bombGravity).
     self:move.
@@ -272,14 +273,14 @@ destroy := { t |
 ; The stage's beginning, or the same one again after a crash: the ground
 ; from its first column, the foes gone, the ship placed.
 startStage := {
-    stageStart := startOf:value(colAt:value(cam)).
+    stageStart := startOf:value(colAt:value(camera:x)).
     ground := ground:first(@expr(stageStart - #1)).
     foes := []. shots := []. bombs := []. booms := [].
-    cam := @expr((stageStart - #1) * colW):asFloat.
+    camera:x := @expr((stageStart - #1) * colW):asFloat.
     stage := stageOf:value(stageStart). tint:set := stage.
     ship:x := #60. ship:y := #200.
     fuel := fuelFull. fuelIn := fuelRate. fireIn := #90.
-    groundTo:value(@expr(cam + fw)).
+    groundTo:value(@expr(camera:x + fw)).
     state := 'flying }.
 
 nextRound := {
@@ -290,15 +291,15 @@ nextRound := {
 newGame := {
     score := #0. lives := #3. round := #1. nextLife := lifeEvery. distance := #0.
     pace := 1.5. fuelRate := #28.
-    cam := 0.0. ground := [].
+    camera:x := 0.0. ground := [].
     startStage:value }.
 
-crash := { state := 'crashing. crashIn := #90. crashTone:play. burst:value(@expr(cam + ship:x:asFloat), ship:y:asFloat) }.
+crash := { state := 'crashing. crashIn := #90. crashTone:play. burst:value(@expr(camera:x + ship:x:asFloat), ship:y:asFloat) }.
 
 ; The ship against the ground under it and the roof over it.
 shipHitsGround := { | hit |
     hit := false.
-    [colAt:value(@expr(cam + ship:x:asFloat)), colAt:value(@expr(cam + ship:right:asFloat - 1.0))]:loop({ col |
+    [colAt:value(@expr(camera:x + ship:x:asFloat)), colAt:value(@expr(camera:x + ship:right:asFloat - 1.0))]:loop({ col |
         ship:bottom:greaterThan(floorAt:value(col)):or({ ship:y:lessThan(roofAt:value(col)) }):ifTrue({ hit := true }) }).
     hit }.
 
@@ -331,12 +332,12 @@ groundTo:value(fw).                  ; some ground, to look at before a game
         @expr(ship:bottom > hudTop):ifTrue({ ship:y := @expr(hudTop - ship:h) }).
 
         ; -- the world moves, and the ground is made to meet it
-        cam := @expr(cam + pace).
-        groundTo:value(@expr(cam + fw)).
+        camera:x := @expr(camera:x + pace).
+        groundTo:value(@expr(camera:x + fw)).
         distance := distance:inc.
         distance:mod(#16):equals(#0):ifTrue({ earn:value(#10) }).
-        stageOf:value(colAt:value(cam)):equals(stage):ifFalse({
-            stage := stageOf:value(colAt:value(cam)). tint:set := stage. fireIn := #90 }).
+        stageOf:value(colAt:value(camera:x)):equals(stage):ifFalse({
+            stage := stageOf:value(colAt:value(camera:x)). tint:set := stage. fireIn := #90 }).
         stage:equals(#3):ifTrue({
             fireIn := fireIn:dec.
             fireIn:lessOrEqual(#0):ifTrue({ throwFire:value. fireIn := @expr(#40 + rng:upTo(#50)) }) }).
@@ -383,8 +384,8 @@ groundTo:value(fw).                  ; some ground, to look at before a game
     sdl:fill(screen, #0, #0, width, height).
     i := #0.
     { i:lessThan(@expr(width / colW + #1)) }:whileTrue({ | col, sx |
-        col := colAt:value(@expr(cam + (i * colW):asFloat)).
-        sx := @expr(i * colW - (cam:truncated:mod(colW))).
+        col := colAt:value(@expr(camera:x + (i * colW):asFloat)).
+        sx := @expr(i * colW - (camera:x:truncated:mod(colW))).
         tint:value(#1).
         sdl:fill(screen, sx, floorAt:value(col), colW, @expr(hudTop - floorAt:value(col))).
         tint:value(#2).
@@ -397,7 +398,7 @@ groundTo:value(fw).                  ; some ground, to look at before a game
     sdl:colour(screen, #248, #248, #248).
     bombs:do({ b | b:box:paint }).
     sdl:colour(screen, #248, #160, #40).
-    booms:do({ bm | boomSprite:paint(@expr(bm:at(#1) - cam):truncated, bm:at(#2):truncated) }).
+    booms:do({ bm | boomSprite:paint(camera:screenX(bm:at(#1)), bm:at(#2):truncated) }).
     state:equals('flying):ifTrue({ sdl:colour(screen, #80, #200, #248). shipSprite:paint(ship:x, ship:y) }).
 
     ; -- the panel: the score, the fuel, the stage

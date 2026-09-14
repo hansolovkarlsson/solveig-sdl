@@ -32,7 +32,8 @@
 ; scanner along the top is a second camera on the same world at another
 ; scale, so `toScreen` and `toScanner` are the two blocks every paint
 ; goes through and the reading of eleven has its second customer for the
-; first of them. That the ship is the first thing in eleven games with
+; first of them. (The reading of twelve made the camera the engine's;
+; `toScreen` is its `camera:screenX`, overridden here with the wrap.) That the ship is the first thing in eleven games with
 ; inertia under a key rather than a heading, so `craft` does not fit and
 ; `mover` bare does, with thrust as a line of the game. That the
 ; humanoids are the first things a game has attached to other things, a
@@ -77,7 +78,6 @@ planetTone := tone:make(#30, #1200).
 ; -- the game
 state := 'attract.                   ; 'attract  'playing  'dying  'over
 score := #0. lives := #0. bombs := #0. wave := #0. nextLife := lifeEvery.
-cam := 0.0.                          ; the world x at the screen's left edge
 ship := nil. facing := 1.0. held := nil.
 humanoids := []. foes := []. bullets := []. mines := []. lasers := []. booms := [].
 landersLeft := #0. bombersLeft := #0. podsLeft := #0. spawnIn := #0.
@@ -120,10 +120,10 @@ nearest := { dx | | d |
     d := dx.
     d:lessThan(@expr(-worldW / 2.0)):ifTrue({ d := @expr(d + worldW) }).
     d:greaterOrEqual(@expr(worldW / 2.0)):ifTrue({ d := @expr(d - worldW) }). d }.
-toScreen := { wx | nearest:value(@expr(wx - cam)):truncated }.
-onScreen := { wx | | sx | sx := toScreen:value(wx). @expr(sx > #-40 & sx < width + #40) }.
+camera:screenX := { wx | nearest:value(@expr(wx - self:x)):truncated }.   ; the engine's, with the wrap
+onScreen := { wx | | sx | sx := camera:screenX(wx). @expr(sx > #-40 & sx < width + #40) }.
 toScanner := { wx | | d |
-    d := nearest:value(@expr(wx - cam - fw / 2.0)).
+    d := nearest:value(@expr(wx - camera:x - fw / 2.0)).
     @expr(scanLeft + scanW / #2 + (d * scanW:asFloat / worldW):truncated) }.
 scanY := { wy | @expr(scanTop + ((wy - skyTop) * scanH / (groundY - skyTop))) }.
 
@@ -150,7 +150,7 @@ humanoid:step := {
         self:x := @expr(ship:x + 8.0). self:y := @expr(ship:y + 12.0).
         ship:y:greaterOrEqual(@expr(groundY - #26):asFloat):ifTrue({
             self:mode := 'ground. self:y := @expr(groundY - #10):asFloat. held := nil. earn:value(#500). dropTone:play }) }) }.
-humanoid:paint := { humanoidSprite:paint(toScreen:value(self:x), self:y:truncated) }.
+humanoid:paint := { humanoidSprite:paint(camera:screenX(self:x), self:y:truncated) }.
 
 ; A foe: which kind, and what it carries.
 foe := mover:new.
@@ -164,7 +164,7 @@ foe:make := { kind, wx, wy | | f |
     kind:equals('lander):ifTrue({ f:vx := @expr(rng:fraction * 2.0 - 1.0). f:fireIn := @expr(#120 + rng:upTo(#120)) }).
     f:phase := @expr(rng:fraction * tau).
     f }.
-foe:box := { rect:make(toScreen:value(self:x), self:y:truncated, self:w, self:h) }.
+foe:box := { self:via(mover):box(self:w, self:h) }.
 worths := #[ "lander" = #150, "mutant" = #150, "swarmer" = #150, "baiter" = #200, "bomber" = #250, "pod" = #1000 ].
 foe:worth := { worths:at(self:kind:asString) }.
 
@@ -219,7 +219,7 @@ foe:step := { | dx, dy, target |
         self:fireIn:lessOrEqual(#0):and({ onScreen:value(self:x) }):ifTrue({
             shootAt:value(self). self:fireIn := @expr(#90 + rng:upTo(#150)) }) }) }.
 foe:paint := { | sx, sy |
-    sx := toScreen:value(self:x). sy := self:y:truncated.
+    sx := camera:screenX(self:x). sy := self:y:truncated.
     self:kind:equals('lander):ifTrue({ landerSprite:paint(sx, sy) }).
     self:kind:equals('mutant):ifTrue({ mutantSprite:paint(sx, sy) }).
     self:kind:equals('baiter):ifTrue({ baiterSprite:paint(sx, sy) }).
@@ -243,9 +243,9 @@ laser:make := { | l, nose |
     nose := facing:greaterThan(0.0):ifElse({ 24.0 }, { 0.0 }).
     l := self:new. l:x := @expr(ship:x + nose). l:y := @expr(ship:y + 4.0).
     l:vx := @expr(facing * laserSpeed + ship:vx). l:life := laserLife. l }.
-laser:box := { | sx |
-    sx := toScreen:value(self:x).
-    rect:make(facing:greaterThan(0.0):ifElse({ @expr(sx - laserLength) }, { sx }), self:y:truncated, laserLength, #2) }.
+laser:box := { | b |
+    b := self:via(mover):box(laserLength, #2).
+    facing:greaterThan(0.0):ifTrue({ b:x := @expr(b:x - laserLength) }). b }.
 laser:step := { self:move. self:x := wrapX:value(self:x). self:life := self:life:dec. self:life:equals(#0):ifTrue({ self:alive := false }) }.
 
 ; ---------------------------------------------------------------------------
@@ -293,7 +293,7 @@ newGame := {
 
 placeShip := {
     ship := mover:new. ship:x := 100.0. ship:y := 240.0. ship:vx := 0.0. ship:vy := 0.0.
-    facing := 1.0. held := nil. cam := @expr(ship:x - 200.0) }.
+    facing := 1.0. held := nil. camera:x := @expr(ship:x - 200.0) }.
 
 ; The planet lost: every lander a mutant, for four waves.
 losePlanet := {
@@ -314,10 +314,10 @@ hyperspace := {
     hyperTone:play.
     held:notNil:ifTrue({ held:mode := 'falling. held:fellFrom := held:y. held := nil }).
     ship:x := @expr(rng:fraction * worldW). ship:y := @expr(skyTop:asFloat + 30.0 + rng:fraction * 300.0).
-    ship:vx := 0.0. cam := wrapX:value(@expr(ship:x - lead:value)).
+    ship:vx := 0.0. camera:x := wrapX:value(@expr(ship:x - lead:value)).
     rng:upTo(#8):equals(#1):ifTrue({ die:value }) }.
 
-shipBox := { rect:make(toScreen:value(ship:x), ship:y:truncated, #24, #10) }.
+shipBox := { ship:box(#24, #10) }.
 
 ; How far ahead of the ship the camera sits, by the way it faces.
 lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
@@ -347,7 +347,7 @@ lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
         ship:y:lessThan(skyTop:asFloat):ifTrue({ ship:y := skyTop:asFloat }).
         ship:y:greaterThan(@expr(groundY - #14):asFloat):ifTrue({ ship:y := @expr(groundY - #14):asFloat }).
         ship:x := wrapX:value(@expr(ship:x + ship:vx)).
-        cam := wrapX:value(@expr(cam + nearest:value(@expr(ship:x - lead:value - cam)) * 0.08)).
+        camera:x := wrapX:value(@expr(camera:x + nearest:value(@expr(ship:x - lead:value - camera:x)) * 0.08)).
 
         ; -- the wave: what is still to come, and the baiters when it drags
         spawnIn := spawnIn:dec.
@@ -372,14 +372,14 @@ lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
         lasers:do({ l | foes:do({ f |
             l:alive:and({ f:alive }):and({ onScreen:value(f:x) }):and({ l:box:touches(f:box) }):ifTrue({ l:alive := false. destroy:value(f) }) }) }).
         foes:do({ f | f:alive:and({ onScreen:value(f:x) }):and({ shipBox:value:touches(f:box) }):ifTrue({ destroy:value(f). die:value }) }).
-        bullets:do({ b | b:alive:and({ onScreen:value(b:x) }):and({ shipBox:value:touches(rect:make(toScreen:value(b:x), b:y:truncated, #3, #3)) }):ifTrue({ b:alive := false. die:value }) }).
-        mines:do({ m | onScreen:value(m:at(#1)):and({ shipBox:value:touches(rect:make(toScreen:value(m:at(#1)), m:at(#2):truncated, #6, #6)) }):ifTrue({ m:atPut(#3, #0). die:value }) }).
+        bullets:do({ b | b:alive:and({ onScreen:value(b:x) }):and({ shipBox:value:touches(rect:make(camera:screenX(b:x), b:y:truncated, #3, #3)) }):ifTrue({ b:alive := false. die:value }) }).
+        mines:do({ m | onScreen:value(m:at(#1)):and({ shipBox:value:touches(rect:make(camera:screenX(m:at(#1)), m:at(#2):truncated, #6, #6)) }):ifTrue({ m:atPut(#3, #0). die:value }) }).
 
         ; -- a humanoid falling, caught
         held:isNil:ifTrue({
             humanoids:do({ h |
                 h:alive:and({ h:mode:equals('falling) }):and({ onScreen:value(h:x) })
-                 :and({ shipBox:value:touches(rect:make(toScreen:value(h:x), h:y:truncated, #6, #10)) }):ifTrue({
+                 :and({ shipBox:value:touches(rect:make(camera:screenX(h:x), h:y:truncated, #6, #10)) }):ifTrue({
                     h:mode := 'held. held := h. earn:value(#500). catchTone:play }) }) }).
 
         foes := foes:select({ f | f:alive }).
@@ -413,8 +413,8 @@ lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
         tint:value(#1).
         i := #0.
         { i:lessThan(#41) }:whileTrue({ | k, sx |
-            k := @expr((cam:truncated + i * #16) / #16).
-            sx := @expr(i * #16 - cam:truncated:mod(#16)).
+            k := @expr((camera:x:truncated + i * #16) / #16).
+            sx := @expr(i * #16 - camera:x:truncated:mod(#16)).
             sdl:line(screen, sx, mountainAt:value(k), @expr(sx + #16), mountainAt:value(k:inc)).
             i := i:inc }) }).
     sdl:colour(screen, #248, #200, #80).
@@ -422,16 +422,16 @@ lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
     sdl:colour(screen, #80, #248, #80).
     foes:do({ f | onScreen:value(f:x):ifTrue({ f:paint }) }).
     sdl:colour(screen, #248, #80, #80).
-    bullets:do({ b | onScreen:value(b:x):ifTrue({ sdl:fill(screen, toScreen:value(b:x), b:y:truncated, #3, #3) }) }).
-    mines:do({ m | onScreen:value(m:at(#1)):ifTrue({ mineSprite:paint(toScreen:value(m:at(#1)), m:at(#2):truncated) }) }).
+    bullets:do({ b | onScreen:value(b:x):ifTrue({ sdl:fill(screen, camera:screenX(b:x), b:y:truncated, #3, #3) }) }).
+    mines:do({ m | onScreen:value(m:at(#1)):ifTrue({ mineSprite:paint(camera:screenX(m:at(#1)), m:at(#2):truncated) }) }).
     sdl:colour(screen, #248, #248, #248).
     lasers:do({ l | onScreen:value(l:x):ifTrue({ l:box:paint }) }).
     sdl:colour(screen, #248, #160, #40).
-    booms:do({ bm | onScreen:value(bm:at(#1)):ifTrue({ boomSprite:paint(toScreen:value(bm:at(#1)), bm:at(#2):truncated) }) }).
+    booms:do({ bm | onScreen:value(bm:at(#1)):ifTrue({ boomSprite:paint(camera:screenX(bm:at(#1)), bm:at(#2):truncated) }) }).
     state:equals('playing):ifTrue({
         sdl:colour(screen, #80, #200, #248).
-        facing:greaterThan(0.0):ifElse({ shipRight:paint(toScreen:value(ship:x), ship:y:truncated) },
-                                       { shipLeft:paint(toScreen:value(ship:x), ship:y:truncated) }) }).
+        facing:greaterThan(0.0):ifElse({ shipRight:paint(camera:screenX(ship:x), ship:y:truncated) },
+                                       { shipLeft:paint(camera:screenX(ship:x), ship:y:truncated) }) }).
 
     ; -- the scanner: the whole world at a twelfth, and the screen's box
     sdl:colour(screen, #0, #0, #0).
@@ -441,8 +441,8 @@ lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
     sdl:line(screen, scanLeft, @expr(scanTop + scanH), @expr(scanLeft + scanW), @expr(scanTop + scanH)).
     sdl:line(screen, scanLeft, scanTop, scanLeft, @expr(scanTop + scanH)).
     sdl:line(screen, @expr(scanLeft + scanW), scanTop, @expr(scanLeft + scanW), @expr(scanTop + scanH)).
-    sdl:line(screen, toScanner:value(cam), scanTop, toScanner:value(cam), @expr(scanTop + scanH)).
-    sdl:line(screen, toScanner:value(@expr(cam + fw)), scanTop, toScanner:value(@expr(cam + fw)), @expr(scanTop + scanH)).
+    sdl:line(screen, toScanner:value(camera:x), scanTop, toScanner:value(camera:x), @expr(scanTop + scanH)).
+    sdl:line(screen, toScanner:value(@expr(camera:x + fw)), scanTop, toScanner:value(@expr(camera:x + fw)), @expr(scanTop + scanH)).
     sdl:colour(screen, #248, #200, #80).
     humanoids:do({ h | sdl:fill(screen, toScanner:value(h:x), scanY:value(h:y:truncated), #2, #2) }).
     sdl:colour(screen, #80, #248, #80).
@@ -461,7 +461,7 @@ lead := { facing:greaterThan(0.0):ifElse({ 200.0 }, { 440.0 }) }.
         i := #0.
         { i:lessThan(bombs) }:whileTrue({ sdl:fill(screen, @expr(#490 + i * #10), #30, #6, #12). i := i:inc }).
         font:number(wave, #620, #10) }).
-    state:equals('over):ifTrue({ font:word("GAME OVER", #212, #220) }).
+    state:equals('over):ifTrue({ font:centred("GAME OVER", #220) }).
 
     engine:show }).
 

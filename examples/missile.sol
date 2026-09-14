@@ -448,7 +448,7 @@ theEnd := { | left |
     sdl:colour(screen, #248, #248, #248).
     state:equals('attract):ifFalse({ font:number(score, #400, #10) }).
     state:equals('counting):ifTrue({
-        font:word("BONUS POINTS", #176, #120).
+        font:centred("BONUS POINTS", #120).
         font:number(mult, #300, #160). font:word("X", #316, #160).
         countStep:greaterOrEqual(#1):ifTrue({
             font:number(@expr(countMissiles * #5 * mult), #260, #210).

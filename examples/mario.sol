@@ -37,7 +37,8 @@
 ; what a solid tile is and what a bumped one does are this game's. That
 ; the camera is here a third time, one way only with a floor at the left
 ; edge, a third shape for the reading of twelve to read against the two
-; it has. That the enemies, the shell and the mushroom are `mover`s bare
+; it has. (It did, and `camera` is the engine's now, with the box at a
+; mover's position; this file keeps how the camera moves.) That the enemies, the shell and the mushroom are `mover`s bare
 ; under the same tile rule. That `sprite` carries a sixth game, `font:word`
 ; a sixth, `tint` a sixth, `keys` its eleventh. And that the binding would
 ; be asked for nothing.
@@ -76,7 +77,6 @@ oneUpTone := tone:make(#1500, #200).
 ; -- the game
 state := 'attract.                   ; 'attract  'playing  'dying  'flag  'walking  'over
 score := #0. coins := #0. lives := #0. round := #1. clock := #0. clockIn := #0.
-cam := 0.0.
 map := nil. cols := #0.
 mario := nil. enemies := []. items := []. pops := []. debris := [].
 dyingIn := #0. pauseIn := #0. countIn := #0.
@@ -143,7 +143,7 @@ starts := [[#22, 'goomba], [#40, 'goomba], [#51, 'goomba], [#53, 'goomba], [#80,
 
 readLevel := { | line |
     cols := level:at(#1):size.
-    map := grid:make(cols, rows).
+    map := grid:make(cols, rows). map:cell := tile.
     [#1, rows]:loop({ r |
         line := level:at(r).
         [#1, cols]:loop({ c | map:atPut(c, r, codes:at(line:at(c))) }) }) }.
@@ -154,8 +154,8 @@ solidAt := { c, r | | v |
     v := tileAt:value(c, r).
     @expr(v = ground | v = brick | v = question | v = mushroomBlock | v = used | v = pipe | v = stair | v = castle | v = poleBase) }.
 
-colOf := { x | @expr(x:truncated / tile + #1) }.
-rowOf := { y | @expr(y:truncated / tile + #1) }.
+colOf := { x | map:colOf(x:truncated) }.        ; the grid's, for a float
+rowOf := { y | map:rowOf(y:truncated) }.
 
 ; ---------------------------------------------------------------------------
 ; A body: a mover with a box, moved on each axis in turn and pushed out
@@ -164,7 +164,7 @@ rowOf := { y | @expr(y:truncated / tile + #1) }.
 
 body := mover:new.
 body:w := #24. body:h := #30. body:onGround := false. body:bumped := nil.
-body:box := { rect:make(@expr(self:x - cam):truncated, self:y:truncated, self:w, self:h) }.
+body:box := { self:via(mover):box(self:w, self:h) }.
 body:touches := { other |
     @expr(self:x < other:x + other:w:asFloat & self:x + self:w:asFloat > other:x &
           self:y < other:y + other:h:asFloat & self:y + self:h:asFloat > other:y) }.
@@ -210,8 +210,8 @@ marioBody:paint := { | sy |
     self:safeIn:greaterThan(#0):and({ frames:mod(#4):lessThan(#2) }):ifFalse({
         sy := self:y:truncated:sub(#2).
         self:big:ifElse(
-            { self:facing:greaterThan(#0):ifElse({ bigRight:paint(@expr(self:x - cam):truncated:sub(#4), sy) }, { bigLeft:paint(@expr(self:x - cam):truncated:sub(#4), sy) }) },
-            { self:facing:greaterThan(#0):ifElse({ smallRight:paint(@expr(self:x - cam):truncated:sub(#4), sy) }, { smallLeft:paint(@expr(self:x - cam):truncated:sub(#4), sy) }) }) }) }.
+            { self:facing:greaterThan(#0):ifElse({ bigRight:paint(@expr(self:x - camera:x):truncated:sub(#4), sy) }, { bigLeft:paint(@expr(self:x - camera:x):truncated:sub(#4), sy) }) },
+            { self:facing:greaterThan(#0):ifElse({ smallRight:paint(@expr(self:x - camera:x):truncated:sub(#4), sy) }, { smallLeft:paint(@expr(self:x - camera:x):truncated:sub(#4), sy) }) }) }) }.
 
 grow := { mario:big:ifFalse({ mario:big := true. mario:h := #62. mario:y := @expr(mario:y - 32.0) }). earn:value(#1000). growTone:play }.
 shrink := { mario:big := false. mario:h := #30. mario:y := @expr(mario:y + 32.0). mario:safeIn := #120. hurtTone:play }.
@@ -250,7 +250,7 @@ foe:step := { | was |
     self:moveY.
     self:y:greaterThan(fh):ifTrue({ self:alive := false }) }.
 foe:paint := { | sx |
-    sx := @expr(self:x - cam):truncated:sub(#4).
+    sx := @expr(self:x - camera:x):truncated:sub(#4).
     self:kind:equals('goomba):ifTrue({
         self:squashedIn:greaterThan(#0):ifElse({ squashedSprite:paint(sx, self:y:truncated) }, { goombaSprite:paint(sx, self:y:truncated) }) }).
     self:kind:equals('koopa):ifTrue({ koopaSprite:paint(sx, @expr(self:y:truncated - #4)) }).
@@ -268,7 +268,7 @@ mushroom:step := { | was |
           self:vy := @expr(self:vy + gravity). self:vy:greaterThan(fallTop):ifTrue({ self:vy := fallTop }).
           self:moveY }).
     self:y:greaterThan(fh):ifTrue({ self:alive := false }) }.
-mushroom:paint := { mushroomSprite:paint(@expr(self:x - cam):truncated:sub(#4), self:y:truncated) }.
+mushroom:paint := { mushroomSprite:paint(@expr(self:x - camera:x):truncated:sub(#4), self:y:truncated) }.
 
 ; ---------------------------------------------------------------------------
 ; What happens
@@ -284,7 +284,7 @@ placeEnemies := {
 startLevel := {
     readLevel:value.
     mario := marioBody:new. mario:x := 96.0. mario:y := @expr((#13 * tile - #30):asFloat). mario:h := #30. mario:big := false.
-    cam := 0.0. items := []. pops := []. debris := [].
+    camera:x := 0.0. items := []. pops := []. debris := [].
     placeEnemies:value.
     clock := clockStart. clockIn := clockTick.
     state := 'playing }.
@@ -347,13 +347,13 @@ mario := marioBody:new. mario:x := 96.0. mario:y := @expr((#13 * tile - #30):asF
         tileAt:value(colOf:value(@expr(mario:x + 12.0)), rowOf:value(@expr(mario:y + 10.0))):equals(pole):ifTrue({ takeFlag:value }).
 
         ; -- the camera: forward only
-        @expr(mario:x - cam > 220.0):ifTrue({ cam := @expr(mario:x - 220.0) }).
-        cam:greaterThan(@expr((cols * tile - width):asFloat)):ifTrue({ cam := @expr((cols * tile - width):asFloat) }).
+        @expr(mario:x - camera:x > 220.0):ifTrue({ camera:x := @expr(mario:x - 220.0) }).
+        camera:x:greaterThan(@expr((cols * tile - width):asFloat)):ifTrue({ camera:x := @expr((cols * tile - width):asFloat) }).
 
         ; -- the others, awake once they are near the screen
         enemies:do({ f |
             f:alive:ifTrue({
-                f:awake:not:and({ @expr(f:x - cam < fw + 64.0) }):ifTrue({ f:awake := true }).
+                f:awake:not:and({ @expr(f:x - camera:x < fw + 64.0) }):ifTrue({ f:awake := true }).
                 f:awake:and({ f:squashedIn:equals(#0) }):ifTrue({ f:step }).
                 f:squashedIn:greaterThan(#0):ifTrue({ f:squashedIn := f:squashedIn:dec. f:squashedIn:equals(#0):ifTrue({ f:alive := false }) }) }) }).
         items:do({ m | m:step }).
@@ -417,8 +417,8 @@ mario := marioBody:new. mario:x := 96.0. mario:y := @expr((#13 * tile - #30):asF
     sdl:fill(screen, #0, #0, width, height).
     i := #0.
     { i:lessThan(#21) }:whileTrue({ | c, sx |
-        c := @expr(cam:truncated / tile + i + #1).
-        sx := @expr(i * tile - cam:truncated:mod(tile)).
+        c := @expr(camera:x:truncated / tile + i + #1).
+        sx := @expr(i * tile - camera:x:truncated:mod(tile)).
         c:lessOrEqual(cols):ifTrue({
             [#1, rows]:loop({ r | | v, sy |
                 v := map:at(c, r). sy := @expr((r - #1) * tile).
@@ -442,12 +442,12 @@ mario := marioBody:new. mario:x := 96.0. mario:y := @expr((#13 * tile - #30):asF
                     tileAt:value(c, @expr(r + #1)):equals(castle):ifFalse({ sdl:fill(screen, @expr(sx + #10), @expr(sy + #12), #12, #20) }) }) }) }).
         i := i:inc }).
     tint:value(#3).
-    pops:do({ p | coinSprite:paint(@expr(((p:at(#1) - #1) * tile) - cam:truncated + #8), @expr((p:at(#2) - #2) * tile + p:at(#3) - #30)) }).
+    pops:do({ p | coinSprite:paint(@expr(((p:at(#1) - #1) * tile) - camera:x:truncated + #8), @expr((p:at(#2) - #2) * tile + p:at(#3) - #30)) }).
     tint:value(#2).
-    debris:do({ d | sdl:fill(screen, @expr(d:at(#1) - cam):truncated, d:at(#2):truncated, #8, #8) }).
+    debris:do({ d | sdl:fill(screen, @expr(d:at(#1) - camera:x):truncated, d:at(#2):truncated, #8, #8) }).
     items:do({ m | tint:value(#3). m:paint }).
     tint:value(#2).
-    enemies:do({ f | f:alive:and({ f:awake }):and({ @expr(f:x - cam > -40.0 & f:x - cam < fw) }):ifTrue({ f:paint }) }).
+    enemies:do({ f | f:alive:and({ f:awake }):and({ @expr(f:x - camera:x > -40.0 & f:x - camera:x < fw) }):ifTrue({ f:paint }) }).
     state:equals('attract):or({ state:equals('over) }):ifFalse({ tint:value(#5). sdl:colour(screen, #252, #56, #56). mario:paint }).
 
     ; -- the top: MARIO and the score, the coins, WORLD 1-1, TIME
@@ -457,7 +457,7 @@ mario := marioBody:new. mario:x := 96.0. mario:y := @expr((#13 * tile - #30):asF
         coinSprite:paint(#220, #40). font:number(coins, #290, #40).
         font:word("WORLD", #340, #8). font:number(#1, #388, #40). sdl:fill(screen, #396, #54, #10, #4). font:number(#1, #430, #40).
         font:word("TIME", #500, #8). font:number(clock, #600, #40) }).
-    state:equals('over):ifTrue({ font:word("GAME OVER", #212, #220) }).
+    state:equals('over):ifTrue({ font:centred("GAME OVER", #220) }).
 
     engine:show }).
 

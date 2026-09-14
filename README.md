@@ -122,7 +122,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/scramble.sol`](examples/scramble.sol) | the tenth game: a world wider than the screen, six stages of ground made ahead of the camera, fuel, rockets, the base, the 1981 rules |
 | [`examples/defender.sol`](examples/defender.sol) | the eleventh game: a planet that wraps, the scanner, landers that steal humanoids and become mutants, baiters, bombers, pods, smart bombs, hyperspace, the 1981 rules |
 | [`examples/mario.sol`](examples/mario.sol) | the twelfth game, the first console one: World 1-1 as rows of text, a jump held higher, blocks bumped from below, goombas and Koopas, the flag, the 1985 rules |
-| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, the colour in use, a rect and a grid, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
+| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, the colour in use, a rect and a grid, the camera, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
@@ -437,8 +437,15 @@ goombas at column 93 every life, by the rule that a rising Mario hitting a
 side is hit. Two things found: falling into a pit read the map below its
 last row, so the lookups are bounded now; and the first jump was under four
 tiles, which no one gets past the third pipe with. The level is 212 tiles
-from memory of the cartridge's 1-1, not from its data. What the reading of
-twelve says is for that reading.
+from memory of the cartridge's 1-1, not from its data. The reading of
+twelve that followed moved the camera in, once three games had scrolled
+three ways and written the same box at a mover's position: `camera:x` and
+`camera:screenX`, which Defender overrides with its wrap by assigning the
+slot, and `mover:box(w, h)` over it, so the engine's box wraps where the
+game's camera does. It gave the grid its `cell` with `colOf` and `rowOf`,
+which Centipede and Mario had written, and the font a `centred` word,
+which three games had placed by hand. Held as before: the reward at every
+so many points, and the body against tiles.
 
 ## Reference
 

@@ -25,7 +25,11 @@
 ; were Missile Command, Centipede and Scramble, and the reading of ten
 ; moved two things in: `tint`, the four lines three games had written the
 ; same way over a table of colours, and `grid`, the table of counts two
-; games had each made for themselves.
+; games had each made for themselves. The eleventh and twelfth were
+; Defender and Super Mario Bros., and the reading of twelve moved the
+; camera in, once three games had scrolled three ways and written the
+; same box at a mover's position, and gave the grid its cell and the font
+; a centred word.
 ;
 ;   engine    opens the window and binds `screen`, `width`, `height`,
 ;             `running` and `frames`; drains the queue, and shows a frame
@@ -35,8 +39,12 @@
 ;             and the alphabet two games wrote their words with
 ;   tint      the colour in use, from a table of sets the game fills
 ;   rect      an integer rectangle: overlap, edges, clamping, a fill, `alive`
-;   grid      a table of counts, rows by columns, `at(c, r)` and `atPut`
-;   mover     a float position and velocity, one move a frame, `alive`
+;   grid      a table of counts, rows by columns, `at(c, r)` and `atPut`,
+;             and the column and row a pixel is in
+;   camera    the world x at the screen's left edge, and a world x made a
+;             screen one; a game that wraps overrides the making
+;   mover     a float position and velocity, one move a frame, `alive`,
+;             and its box on the screen through the camera
 ;   ball      a mover with an integer shadow, `box`, which is a rect,
 ;             crossed once a frame by `settle`
 ;   thing     a mover with a radius, that wraps; collision is a distance
@@ -50,7 +58,7 @@
 ; event on; the `whileTrue` around it is the program's own, as it was in both
 ; games and as the README argues it should be. Nothing here calls back.
 ;
-; **What an included file binds are ordinary globals**, so the fourteen
+; **What an included file binds are ordinary globals**, so the fifteen
 ; names above, the seven the engine binds when it opens, `tau`, `rng` and
 ; the two key lists are the whole of what this file takes from the
 ; namespace.
@@ -242,6 +250,11 @@ font:word := { text, left, top | | k |
             self:glyphs:at(text:at(k)):paint(@expr(left + (k - #1) * #4 * self:cell), top) }).
         k := k:inc }) }.
 
+; A word across the middle of the screen, which three games had placed by
+; hand and two of them at the same number.
+font:centred := { text, top |
+    self:word(text, @expr((width - (text:size * #4 - #1) * self:cell) / #2), top) }.
+
 ; ---------------------------------------------------------------------------
 ; The colour in use: a table of sets the game fills, each a list of colour
 ; triples, and which set is in use, so that a game changes its colours by
@@ -290,6 +303,7 @@ rect:clampY := {
 
 grid := object:new.
 grid:cols := #0. grid:rows := #0. grid:cells := nil.
+grid:cell := #1.                     ; a cell's side in pixels, for the two below
 grid:make := { cols, rows | | g, r |
     g := self:new. g:cols := cols. g:rows := rows. g:cells := [].
     rows:repeat({ r := []. cols:repeat({ r:add(#0) }). g:cells:add(r) }).
@@ -297,6 +311,20 @@ grid:make := { cols, rows | | g, r |
 grid:at := { c, r | self:cells:at(r):at(c) }.
 grid:atPut := { c, r, v | self:cells:at(r):atPut(c, v) }.
 grid:row := { r | self:cells:at(r) }.
+; The column and row an integer pixel is in, which two games wrote.
+grid:colOf := { x | @expr(x / self:cell + #1) }.
+grid:rowOf := { y | @expr(y / self:cell + #1) }.
+
+; ---------------------------------------------------------------------------
+; The camera: the world x at the screen's left edge, nought for a game
+; whose world is its screen, and the making of a screen x from a world
+; one, which is where three scrolling games subtracted it. A world that
+; wraps overrides `screenX` to bring the difference the near way round
+; first, and everything in the engine that asks the camera gets the wrap.
+
+camera := object:new.
+camera:x := 0.0.
+camera:screenX := { wx | @expr(wx - self:x):truncated }.
 
 ; ---------------------------------------------------------------------------
 ; A mover: a float position and velocity, one move a frame, and whether it
@@ -314,6 +342,8 @@ mover:move := {
 mover:aim := { angle, speed |
     self:vx := @expr(angle:cos * speed). self:vy := @expr(angle:sin * speed) }.
 mover:speed := { @expr(sqrt(self:vx * self:vx + self:vy * self:vy)) }.
+; Its box on the screen, w by h, through the camera; three games wrote it.
+mover:box := { w, h | rect:make(camera:screenX(self:x), self:y:truncated, w, h) }.
 
 ; ---------------------------------------------------------------------------
 ; A ball: a mover with a box. The physics is in floats and the drawing is

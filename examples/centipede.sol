@@ -121,8 +121,6 @@ tint:sets := [[[#0, #200, #0],    [#248, #80, #80],  [#248, #248, #80], [#180, #
 
 leftOf := { col | @expr((col - #1) * cell) }.  ; a column's left edge
 topOf := { row | @expr((row - #1) * cell) }.   ; a row's top edge
-colOf := { x | @expr(x / cell + #1) }.         ; the column a pixel is in
-rowOf := { y | @expr(y / cell + #1) }.
 
 inField := { col, row | @expr(col >= #1 & col <= cols & row >= fieldTop & row <= rows) }.
 hasMushroom := { col, row | inField:value(col, row):and({ field:at(col, row):greaterThan(#0) }) }.
@@ -130,7 +128,7 @@ isPoisoned := { col, row | inField:value(col, row):and({ field:at(col, row):grea
 
 ; Some mushrooms, above your rows, to begin with.
 seedField := {
-    field := grid:make(cols, rows).
+    field := grid:make(cols, rows). field:cell := cell.
     mushroomsAtStart:repeat({
         field:atPut(rng:upTo(cols), rng:between(fieldTop, @expr(zoneTop - #1)), #4) }) }.
 
@@ -209,13 +207,13 @@ anyInZone := { chains:inject(false, { seen, c | seen:or({ c:at(#1):row:greaterOr
 
 shooter := rect:make(#312, #448, cell, cell).
 shooter:tryX := { nx | | c, r |
-    c := colOf:value(@expr(nx + cell / #2)). r := rowOf:value(@expr(self:y + cell / #2)).
+    c := field:colOf(@expr(nx + cell / #2)). r := field:rowOf(@expr(self:y + cell / #2)).
     @expr(nx >= #0 & nx <= width - cell):and({ hasMushroom:value(c, r):not }):ifTrue({ self:x := nx }) }.
 shooter:tryY := { ny | | c, r |
-    c := colOf:value(@expr(self:x + cell / #2)). r := rowOf:value(@expr(ny + cell / #2)).
+    c := field:colOf(@expr(self:x + cell / #2)). r := field:rowOf(@expr(ny + cell / #2)).
     @expr(ny >= (zoneTop - #1) * cell & ny <= height - cell):and({ hasMushroom:value(c, r):not }):ifTrue({ self:y := ny }) }.
-shooter:col := { colOf:value(@expr(self:x + cell / #2)) }.
-shooter:row := { rowOf:value(@expr(self:y + cell / #2)) }.
+shooter:col := { field:colOf(@expr(self:x + cell / #2)) }.
+shooter:row := { field:rowOf(@expr(self:y + cell / #2)) }.
 
 fire := {
     shot:isNil:ifTrue({
@@ -246,8 +244,8 @@ spiderThing:step := { | top, bottom |
         rng:upTo(#4):equals(#1):ifTrue({ self:vx := self:vx:negated }) }).
     hasMushroom:value(self:col, self:row):ifTrue({ field:atPut(self:col, self:row, #0) }).
     @expr(self:x < -20.0 | self:x > fw + 20.0):ifTrue({ self:alive := false }) }.
-spiderThing:col := { colOf:value(@expr(self:x:truncated + cell / #2)) }.
-spiderThing:row := { rowOf:value(@expr(self:y:truncated + cell / #2)) }.
+spiderThing:col := { field:colOf(@expr(self:x:truncated + cell / #2)) }.
+spiderThing:row := { field:rowOf(@expr(self:y:truncated + cell / #2)) }.
 
 ; The flea: straight down a column, leaving mushrooms; two shots.
 fleaThing := mover:new.
@@ -263,8 +261,8 @@ fleaThing:step := { | r |
         r:lessThan(rows):and({ rng:upTo(#3):equals(#1) }):and({ hasMushroom:value(self:col, r):not }):ifTrue({
             field:atPut(self:col, r, #4) }) }).
     self:y:greaterThan(fh):ifTrue({ self:alive := false }) }.
-fleaThing:col := { colOf:value(@expr(self:x:truncated + cell / #2)) }.
-fleaThing:row := { rowOf:value(@expr(self:y:truncated + cell / #2)) }.
+fleaThing:col := { field:colOf(@expr(self:x:truncated + cell / #2)) }.
+fleaThing:row := { field:rowOf(@expr(self:y:truncated + cell / #2)) }.
 
 ; The scorpion: across a row above your rows, poisoning what it passes.
 scorpionThing := mover:new.
@@ -278,8 +276,8 @@ scorpionThing:step := {
     hasMushroom:value(self:col, self:row):and({ isPoisoned:value(self:col, self:row):not }):ifTrue({
         field:atPut(self:col, self:row, @expr(field:at(self:col, self:row) + #10)) }).
     @expr(self:x < -20.0 | self:x > fw + 20.0):ifTrue({ self:alive := false }) }.
-scorpionThing:col := { colOf:value(@expr(self:x:truncated + cell / #2)) }.
-scorpionThing:row := { rowOf:value(@expr(self:y:truncated + cell / #2)) }.
+scorpionThing:col := { field:colOf(@expr(self:x:truncated + cell / #2)) }.
+scorpionThing:row := { field:rowOf(@expr(self:y:truncated + cell / #2)) }.
 
 ; A visitor's box, for the shot and the shooter to touch.
 boxOf := { m | rect:make(@expr(m:x:truncated + #2), @expr(m:y:truncated + #2), @expr(cell - #4), @expr(cell - #4)) }.
@@ -330,7 +328,7 @@ restore := { | v |
 ; The shot against everything above it, nearest first: the cell it is in
 ; for mushrooms and segments, the box for the visitors.
 shotHits := { | c, r, hit |
-    c := colOf:value(shot:x). r := rowOf:value(shot:y).
+    c := field:colOf(shot:x). r := field:rowOf(shot:y).
     hit := false.
     hasMushroom:value(c, r):ifTrue({
         hit := true. hitTone:play.
