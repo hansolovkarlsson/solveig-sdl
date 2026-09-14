@@ -96,7 +96,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The seven examples, and the engine under four of them
+## The eight examples, and the engine under five of them
 
 | | |
 | --- | --- |
@@ -107,6 +107,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/breakout.sol`](examples/breakout.sol) | the second game: `Left`/`Right` or the mouse, Space serves, three balls, the 1976 rules |
 | [`examples/asteroids.sol`](examples/asteroids.sol) | the third game: turn, thrust, fire, hyperspace; rocks that split, both saucers, the 1979 rules |
 | [`examples/invaders.sol`](examples/invaders.sol) | the fourth game: fifty-five invaders, four bunkers that erode, the mystery ship, the 1978 rules |
+| [`examples/spacewar.sol`](examples/spacewar.sol) | the fifth game: two ships, the star's gravity, torpedoes, fuel, hyperspace, the 1962 rules; the machine flies the wedge until `C` |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover and a ball, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -225,6 +226,19 @@ engine: the sprite, because the font had been one drawn the slow way since the
 first game and is ten sprites now; `alive` on a rect, which three games had
 written for themselves; and `tone:hum`, the one-channel policy Asteroids and
 Invaders had written the same way. Everything else in this file stays its own.
+
+**`spacewar.sol` is the fifth game, and the second drawn with lines.** The
+1962 rules: a star whose gravity bends both ships and kills one that touches
+it, torpedoes that fly straight as the PDP-1's did, fuel and thirty-one
+torpedoes a round shown as bars, hyperspace with a rising chance of not coming
+back, the screen wrapping, first to five. The machine flies the wedge until
+`C`: it brakes when it is falling into the well, turns away when it is close,
+and otherwise hunts and fires; it never uses hyperspace. The header predicted
+that `thing` and `draw` would be wanted exactly as Asteroids wrote them, and
+they are copied in rather than shared so that the reading of five can move
+them by the two-game rule; that gravity would be a few lines on the thing,
+and the first force; and that the binding would be asked for nothing. What
+the reading found is for that reading.
 
 ## Reference
 
