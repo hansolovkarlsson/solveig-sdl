@@ -188,7 +188,7 @@ body:moveY := { | r, c0, c1, hit, best, mx |
     self:onGround := false. self:bumped := nil.
     c0 := colOf:value(@expr(self:x + 2.0)). c1 := colOf:value(@expr(self:x + self:w:asFloat - 3.0)).
     self:vy:greaterOrEqual(0.0):ifTrue({
-        r := rowOf:value(@expr(self:y + self:h:asFloat - 1.0)).
+        r := rowOf:value(@expr(self:y + self:h:asFloat)).      ; the pixel under the feet, so that standing counts every frame
         hit := false.
         [c0, c1]:loop({ c | solidAt:value(c, r):ifTrue({ hit := true }) }).
         hit:ifTrue({ self:y := @expr(((r - #1) * tile - self:h):asFloat). self:vy := 0.0. self:onGround := true }) }).

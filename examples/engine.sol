@@ -90,11 +90,18 @@ engine:drain := { each | | event |
 ; assignment of a constant reads as a claim on the name.
 engine:stop := { running := false }.
 
-; The frame just drawn, then about a sixtieth of a second.
-engine:show := {
+; The frame just drawn, then the rest of a sixtieth of a second. `present`
+; takes time of its own and a frame that drew a lot has spent some of the
+; sixtieth already; waiting a whole one on top of both, as this did for
+; twelve games, measured fifty-four frames a second on the twelfth here,
+; and would be less on a display that `present` waits for.
+engine:lastShown := #0.
+engine:show := { | spent |
     sdl:present(screen).
     frames := frames:inc.
-    sdl:wait(#16) }.
+    spent := @expr(sdl:ticks - engine:lastShown).
+    @expr(spent < #16):ifTrue({ sdl:wait(@expr(#16 - spent)) }).
+    engine:lastShown := sdl:ticks }.
 
 ; ---------------------------------------------------------------------------
 ; Held keys. The binding has events and no keyboard state, so a key held
