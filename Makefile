@@ -11,6 +11,8 @@
 #   make invaders       build it and play the fourth
 #   make spacewar       build it and play the fifth
 #   make lander         build it and play the sixth
+#   make test           compile every example, which is the check that nothing
+#                       next door has broken one
 #   make clean
 #
 # This is an *extension*, so it is not part of Solveig and does not build with
@@ -63,7 +65,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander clean check
+.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander test clean check
 
 all: $(TARGET)
 
@@ -132,6 +134,18 @@ spacewar: all
 # The sixth game, the first that is not a fight, and the first with words.
 lander: all
 	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/lander.sol
+
+# Every example compiled, and not run, since a run wants a window. This is
+# the check that a library retired in Solveig has not broken a file here that
+# includes it by name: solveig-gtk's edit.sol went thirteen days that way,
+# and nothing on either side said so. `--expr` on all of them; see `run`.
+EXAMPLES = $(wildcard examples/*.sol)
+test: check
+	@mkdir -p build
+	@for f in $(EXAMPLES); do \
+	    $(SOLVEIG)/bin/solas --expr $$f -o build/$$(basename $$f .sol).sob || exit 1; \
+	done
+	@echo "solveig-sdl: $(words $(EXAMPLES)) examples compile"
 
 clean:
 	rm -rf $(BUILD)

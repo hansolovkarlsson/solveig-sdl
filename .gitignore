@@ -4,3 +4,4 @@ build/
 *.dylib
 *.sob
 .DS_Store
+scratch/

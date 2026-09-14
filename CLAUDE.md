@@ -17,8 +17,9 @@ An SDL2 surface for Solveig, loaded at run time as a VM extension.
 
 ## Commands
 
-`make` builds `build/sdl.so`; `make check` runs the examples;
-`make clean`. Run one against a Solveig VM:
+`make` builds `build/sdl.so`; `make test` compiles every example, which is
+the check that a library retired in Solveig has not broken one here;
+`make check` verifies the prerequisites; `make clean`. Run one against a Solveig VM:
 
 ```sh
 ../Solveig/bin/solvm --extension=build/sdl.so examples/bounce.sob
