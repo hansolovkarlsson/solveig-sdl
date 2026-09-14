@@ -103,7 +103,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The fourteen examples, and the engine under eleven of them
+## The fifteen examples, and the engine under twelve of them
 
 | | |
 | --- | --- |
@@ -121,6 +121,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/centipede.sol`](examples/centipede.sol) | the ninth game: the mushroom field, the centipede that splits, the spider, the flea, the scorpion and its poison, the 1981 rules |
 | [`examples/scramble.sol`](examples/scramble.sol) | the tenth game: a world wider than the screen, six stages of ground made ahead of the camera, fuel, rockets, the base, the 1981 rules |
 | [`examples/defender.sol`](examples/defender.sol) | the eleventh game: a planet that wraps, the scanner, landers that steal humanoids and become mutants, baiters, bombers, pods, smart bombs, hyperspace, the 1981 rules |
+| [`examples/mario.sol`](examples/mario.sol) | the twelfth game, the first console one: World 1-1 as rows of text, a jump held higher, blocks bumped from below, goombas and Koopas, the flag, the 1985 rules |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, the colour in use, a rect and a grid, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -416,6 +417,28 @@ stands in for it; and more of the sound, a second channel, a volume, a note
 that is not a square wave, since one `beep` has carried eleven games and a
 tune, and would not carry a console's music. The famous console games come
 first, and they are what will ask.
+
+**`mario.sol` is the twelfth game, the first console game, the first with a
+jump, and the first whose map is a grid the player collides with.** The
+1985 rules for World 1-1: the level as rows of text read into a grid, a
+jump higher the longer the button is held and faster on the way down, a
+run, the question block and the mushroom, bricks broken when big, goombas
+stomped and Koopas turned to shells and kicked, the flagpole by height, the
+clock paid at 50 a count, and 1-1 again with the goombas quicker. The
+header predicted that the jump is a dozen lines of the game over `mover`;
+that the level is the grid's fourth game and its first as a map, a moving
+body resolved against the tiles it overlaps on each axis in turn, a block
+of the game since what a tile is and what a bumped one does are the
+game's; that the camera is here a third time, forward only; and that the
+binding would be asked for nothing. Checked directly on clear ground for
+every mechanic, the physics traced for a tap, a hold and a run, and by a
+self-playing copy that clears the pipes and the pits and dies to a pair of
+goombas at column 93 every life, by the rule that a rising Mario hitting a
+side is hit. Two things found: falling into a pit read the map below its
+last row, so the lookups are bounded now; and the first jump was under four
+tiles, which no one gets past the third pipe with. The level is 212 tiles
+from memory of the cartridge's 1-1, not from its data. What the reading of
+twelve says is for that reading.
 
 ## Reference
 

@@ -16,6 +16,7 @@
 #   make centipede      build it and play the ninth
 #   make scramble       build it and play the tenth
 #   make defender       build it and play the eleventh
+#   make mario          build it and play the twelfth
 #   make test           compile every example, which is the check that nothing
 #                       next door has broken one
 #   make clean
@@ -70,7 +71,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander tetris missile centipede scramble defender test clean check
+.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander tetris missile centipede scramble defender mario test clean check
 
 all: $(TARGET)
 
@@ -161,6 +162,10 @@ scramble: all
 # the first with two views of it.
 defender: all
 	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/defender.sol
+
+# The twelfth game, the first console game, the first with a jump.
+mario: all
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/mario.sol
 
 # Every example compiled, and not run, since a run wants a window. This is
 # the check that a library retired in Solveig has not broken a file here that
