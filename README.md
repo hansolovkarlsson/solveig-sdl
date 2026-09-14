@@ -96,7 +96,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The six examples, and the engine under three of them
+## The seven examples, and the engine under four of them
 
 | | |
 | --- | --- |
@@ -106,6 +106,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/pong.sol`](examples/pong.sol) | the game: `W`/`S` and `Up`/`Down`, `C` hands a paddle to the machine, Space serves, first to eleven |
 | [`examples/breakout.sol`](examples/breakout.sol) | the second game: `Left`/`Right` or the mouse, Space serves, three balls, the 1976 rules |
 | [`examples/asteroids.sol`](examples/asteroids.sol) | the third game: turn, thrust, fire, hyperspace; rocks that split, both saucers, the 1979 rules |
+| [`examples/invaders.sol`](examples/invaders.sol) | the fourth game: fifty-five invaders, four bunkers that erode, the mystery ship, the 1978 rules |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, the font, a rect, a mover and a ball, a tone |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -205,6 +206,22 @@ that followed found the seam: neither `ball` nor `thing` is the other's special
 case, but both are a `mover`, four slots and two lines, which is in `engine.sol`
 now with both delegating to it. `thing`, the line drawing and the one-channel
 sound policy stay in `asteroids.sol` until a second game wants them.
+
+**`invaders.sol` is the fourth game, and the one the first reading said
+would push on the binding**, because an invader is a picture and nothing here
+draws a picture. It did not. The header predicted, before the body was
+written, that a picture at this scale is rows of text compiled once to
+horizontal runs, that a run is one `sdl:fill`, and that fifty-five invaders
+and four eroding bunkers would fit the frame that way; and named what would be
+asked for if they did not, *a bitmap in one call*, not a texture. Measured:
+26,913 frames of a self-playing game in 14.6 seconds on the `-g` build with
+SDL's dummy renderer, about half a millisecond a frame against the sixteen
+available. So the trigger was not met, by a number rather than a guess, and
+the twelve messages stand after four games. The block moves one invader a
+frame, which is where the original's ripple and its quickening both come from
+and costs nothing to write; a bunker is cells and a sprite rebuilt from them
+when bitten. What the reading of four files says about `font`, which draws a
+digit the slow way, is for that reading.
 
 ## Reference
 
