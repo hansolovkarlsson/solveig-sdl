@@ -8,22 +8,25 @@
 ; none of them C, about a hundred lines. Nothing here draws a sprite, mixes a
 ; sample or owns a scene; neither game asked. The rule at the end of the
 ; README applies at this boundary too: a third game that wants something the
-; two did not is the reason to add it, and not before.
+; two did not is the reason to add it, and not before. The third game was
+; Asteroids, and it asked for nothing; what the reading of three found was
+; a seam inside the fifth thing, which is `mover` now.
 ;
 ;   engine    opens the window and binds `screen`, `width`, `height`,
 ;             `running` and `frames`; drains the queue, and shows a frame
 ;   keys      which keys are held, kept from the events, asked by name
-;   font      the 3x5 cell digits both scores were drawn with
+;   font      the 3x5 cell digits every score was drawn with
 ;   rect      an integer rectangle: overlap, edges, clamping, a fill
-;   ball      a float position and velocity with an integer shadow, `box`,
-;             which is a rect, crossed once a frame by `settle`
+;   mover     a float position and velocity, one move a frame, `alive`
+;   ball      a mover with an integer shadow, `box`, which is a rect,
+;             crossed once a frame by `settle`
 ;   tone      a pitch and a length, played by `sdl:beep`
 ;
 ; **The game keeps its loop.** `engine:drain` empties the queue and hands each
 ; event on; the `whileTrue` around it is the program's own, as it was in both
 ; games and as the README argues it should be. Nothing here calls back.
 ;
-; **What an included file binds are ordinary globals**, so the six names
+; **What an included file binds are ordinary globals**, so the seven names
 ; above and the five the engine binds when it opens are the whole of what
 ; this file takes from the namespace.
 
@@ -151,13 +154,30 @@ rect:clampY := {
     @expr(self:y > height - self:h):ifTrue({ self:y := @expr(height - self:h) }) }.
 
 ; ---------------------------------------------------------------------------
-; A ball. The physics is in floats and the drawing is in integers, and the
-; line between them is crossed in one place: `settle` copies the position
-; into `box`, and everything that compares, collides or draws uses the box.
-; Both games kept that as a rule in a comment; here it is a slot.
+; A mover: a float position and velocity, one move a frame, and whether it
+; is still there. It is what a ball and Asteroids' `thing` had in common
+; when the three games were read together: four slots and two lines, with
+; the shape of motion, a box that bounces or a radius that wraps, left to
+; whatever delegates to it.
 
-ball := object:new.
-ball:x := 0.0. ball:y := 0.0. ball:vx := 0.0. ball:vy := 0.0.
+mover := object:new.
+mover:x := 0.0. mover:y := 0.0. mover:vx := 0.0. mover:vy := 0.0.
+mover:alive := true.
+mover:move := {
+    self:x := @expr(self:x + self:vx).
+    self:y := @expr(self:y + self:vy) }.
+mover:aim := { angle, speed |
+    self:vx := @expr(angle:cos * speed). self:vy := @expr(angle:sin * speed) }.
+mover:speed := { @expr(sqrt(self:vx * self:vx + self:vy * self:vy)) }.
+
+; ---------------------------------------------------------------------------
+; A ball: a mover with a box. The physics is in floats and the drawing is
+; in integers, and the line between them is crossed in one place: `settle`
+; copies the position into `box`, and everything that compares, collides
+; or draws uses the box. Both games kept that as a rule in a comment; here
+; it is a slot.
+
+ball := mover:new.
 ball:box := nil.
 ball:make := { size | | b |
     b := self:new. b:box := rect:make(#0, #0, size, size). b }.
@@ -172,17 +192,13 @@ ball:place := { left, top |
     self:settle }.
 
 ; One frame of travel.
-ball:step := {
-    self:x := @expr(self:x + self:vx).
-    self:y := @expr(self:y + self:vy).
-    self:settle }.
+ball:step := { self:move. self:settle }.
 
 ; Moved flush to an edge along one axis, which is how a hit is kept from
 ; registering twice.
 ball:putX := { at | self:x := at:asFloat. self:settle }.
 ball:putY := { at | self:y := at:asFloat. self:settle }.
 
-ball:speed := { @expr(sqrt(self:vx * self:vx + self:vy * self:vy)) }.
 ball:paint := { self:box:paint }.
 
 ; ---------------------------------------------------------------------------

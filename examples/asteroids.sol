@@ -25,7 +25,8 @@
 ; integer shadow is not a box but a radius, and Asteroids wraps where Pong
 ; bounced. So this file would define its own moving thing, and whether
 ; `ball` is that thing's special case is a question for the reading after,
-; not for this file. Of the binding's twelve messages it would ask for
+; not for this file. (The reading found neither is the other's case: both
+; are a `mover`, four slots and two lines, and `thing` delegates to it now.) Of the binding's twelve messages it would ask for
 ; nothing: `sdl:line` is the whole of the vector display, the trigonometry
 ; is the machine's, and the continuous sounds, thrust and siren and the
 ; heartbeat, would be `sdl:beep` re-issued from the frame, since a beep
@@ -126,17 +127,14 @@ draw := { shape, ox, oy, angle, scale | | c, s, n, j, p, lx, ly, px, py |
         j := j:inc }) }.
 
 ; ---------------------------------------------------------------------------
-; A thing that moves: a float position and velocity, a radius, and the
-; wrap. Not a `ball`, because its shadow is a radius and not a box, and
-; nothing here bounces. Everything on the screen delegates to it.
+; A thing that moves: a mover with a radius, and the wrap. Not a `ball`,
+; because its shadow is a radius and not a box, and nothing here bounces;
+; what the two have in common is the mover under both. Everything on the
+; screen delegates to it.
 
-thing := object:new.
-thing:x := 0.0. thing:y := 0.0. thing:vx := 0.0. thing:vy := 0.0.
-thing:r := 1.0. thing:alive := true.
-thing:step := {
-    self:x := @expr(self:x + self:vx).
-    self:y := @expr(self:y + self:vy).
-    self:wrap }.
+thing := mover:new.
+thing:r := 1.0.
+thing:step := { self:move. self:wrap }.
 thing:wrap := {
     self:x:lessThan(@expr(-self:r)):ifTrue({ self:x := @expr(self:x + fw + 2.0 * self:r) }).
     self:x:greaterThan(@expr(fw + self:r)):ifTrue({ self:x := @expr(self:x - fw - 2.0 * self:r) }).
@@ -146,8 +144,6 @@ thing:within := { other, reach | | dx, dy |
     dx := @expr(self:x - other:x). dy := @expr(self:y - other:y).
     @expr(dx * dx + dy * dy < reach * reach) }.
 thing:touches := { other | self:within(other, @expr(self:r + other:r)) }.
-thing:aim := { angle, speed |
-    self:vx := @expr(angle:cos * speed). self:vy := @expr(angle:sin * speed) }.
 
 ; -- a rock
 rock := thing:new.

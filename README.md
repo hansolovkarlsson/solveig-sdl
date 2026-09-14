@@ -106,7 +106,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/pong.sol`](examples/pong.sol) | the game: `W`/`S` and `Up`/`Down`, `C` hands a paddle to the machine, Space serves, first to eleven |
 | [`examples/breakout.sol`](examples/breakout.sol) | the second game: `Left`/`Right` or the mouse, Space serves, three balls, the 1976 rules |
 | [`examples/asteroids.sol`](examples/asteroids.sol) | the third game: turn, thrust, fire, hyperspace; rocks that split, both saucers, the 1979 rules |
-| [`examples/engine.sol`](examples/engine.sol) | what the two games had in common: the frame, held keys, the font, a rect, a ball, a tone |
+| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, the font, a rect, a mover and a ball, a tone |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
@@ -200,8 +200,11 @@ a shape is a list of unit points drawn as `sdl:line`s after one rotation and
 one scale, so a rock is nine lines and never a `fill`. The binding was asked
 for nothing: the trigonometry is the machine's, and the continuous sounds, the
 thrust, the siren and the heartbeat, are `sdl:beep` asked for again from the
-frame, yielding to anything that just happened. Whether `ball` is a `thing`
-with a box is the next reading, not this file's business.
+frame, yielding to anything that just happened. The reading of three files
+that followed found the seam: neither `ball` nor `thing` is the other's special
+case, but both are a `mover`, four slots and two lines, which is in `engine.sol`
+now with both delegating to it. `thing`, the line drawing and the one-channel
+sound policy stay in `asteroids.sol` until a second game wants them.
 
 ## Reference
 
