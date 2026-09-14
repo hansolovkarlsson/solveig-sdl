@@ -107,7 +107,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/breakout.sol`](examples/breakout.sol) | the second game: `Left`/`Right` or the mouse, Space serves, three balls, the 1976 rules |
 | [`examples/asteroids.sol`](examples/asteroids.sol) | the third game: turn, thrust, fire, hyperspace; rocks that split, both saucers, the 1979 rules |
 | [`examples/invaders.sol`](examples/invaders.sol) | the fourth game: fifty-five invaders, four bunkers that erode, the mystery ship, the 1978 rules |
-| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, the font, a rect, a mover and a ball, a tone |
+| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover and a ball, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
@@ -220,8 +220,11 @@ available. So the trigger was not met, by a number rather than a guess, and
 the twelve messages stand after four games. The block moves one invader a
 frame, which is where the original's ripple and its quickening both come from
 and costs nothing to write; a bunker is cells and a sprite rebuilt from them
-when bitten. What the reading of four files says about `font`, which draws a
-digit the slow way, is for that reading.
+when bitten. The reading of four that followed moved three things into the
+engine: the sprite, because the font had been one drawn the slow way since the
+first game and is ten sprites now; `alive` on a rect, which three games had
+written for themselves; and `tone:hum`, the one-channel policy Asteroids and
+Invaders had written the same way. Everything else in this file stays its own.
 
 ## Reference
 

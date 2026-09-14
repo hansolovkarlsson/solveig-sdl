@@ -34,8 +34,9 @@
 ; here is a float), and the font would turn out to be the special case of
 ; the sprite: a digit is a 3x5 picture drawn the slow way.
 ;
-; **What is here that no game had**: a sprite, which is what `font:digit`
-; does, done once at start rather than every frame; a picture that changes,
+; **What was here that no game had**: a sprite, which is what `font:digit`
+; did, done once at start rather than every frame, and which the reading of
+; four moved into the engine with the font over it; a picture that changes,
 ; the bunker, which is cells and a sprite rebuilt from them; and a block of
 ; things that moves one thing a frame, which is the original's whole feel
 ; and costs nothing to write.
@@ -77,7 +78,6 @@ mysteryTones := [tone:make(#600, #60), tone:make(#700, #60)].
 mysteryHit := tone:make(#900, #120).
 bonusTone := tone:make(#1000, #80).
 marchTones := [tone:make(#73, #60), tone:make(#69, #60), tone:make(#65, #60), tone:make(#62, #60)].
-lastSound := #0.
 
 ; -- the game
 score := #0. lives := #0. wave := #0. nextBonus := #1500.
@@ -92,67 +92,32 @@ dying := #0.                         ; frames of the cannon's death left
 mysteryWorth := #0. mysteryShownAt := #0. mysteryShownIn := #0.
 i := #0. j := #0. k := nil. b := nil.
 
-; ---------------------------------------------------------------------------
-; A sprite: rows of text, `#` a cell and `.` a gap, compiled once to
-; horizontal runs, so that painting it is one `sdl:fill` per run rather
-; than one per cell. `fromCells` is the same over rows of booleans, which
-; is what a picture that changes keeps.
-
-sprite := object:new.
-sprite:w := #0. sprite:h := #0. sprite:runs := nil.
-sprite:fromCells := { cells | | s, row, start, ci, cj |
-    s := self:new.
-    s:h := cells:size. s:w := cells:at(#1):size. s:runs := [].
-    cj := #1.
-    { cj:lessOrEqual(s:h) }:whileTrue({
-        row := cells:at(cj). start := #0. ci := #1.
-        { ci:lessOrEqual(s:w) }:whileTrue({
-            row:at(ci):ifElse(
-                { start:equals(#0):ifTrue({ start := ci }) },
-                { start:greaterThan(#0):ifTrue({
-                    s:runs:add([cj, start, @expr(ci - start)]). start := #0 }) }).
-            ci := ci:inc }).
-        start:greaterThan(#0):ifTrue({ s:runs:add([cj, start, @expr(s:w + #1 - start)]) }).
-        cj := cj:inc }).
-    s }.
-sprite:make := { rows |
-    self:fromCells(rows:collect({ row | | out, ci |
-        out := []. ci := #1.
-        { ci:lessOrEqual(row:size) }:whileTrue({
-            out:add(row:at(ci):equals("#")). ci := ci:inc }).
-        out })) }.
-sprite:paint := { px, py |
-    self:runs:do({ r |
-        sdl:fill(screen, @expr(px + (r:at(#2) - #1) * cell),
-                         @expr(py + (r:at(#1) - #1) * cell),
-                         @expr(r:at(#3) * cell), cell) }) }.
-
 squid := [sprite:make(["...##...", "..####..", ".######.", "##.##.##",
-                       "########", "..#..#..", ".#.##.#.", "#.#..#.#"]),
+                       "########", "..#..#..", ".#.##.#.", "#.#..#.#"], cell),
           sprite:make(["...##...", "..####..", ".######.", "##.##.##",
-                       "########", ".#.##.#.", "#......#", ".#....#."])].
+                       "########", ".#.##.#.", "#......#", ".#....#."], cell)].
 crab  := [sprite:make(["..#.....#..", "...#...#...", "..#######..", ".##.###.##.",
-                       "###########", "#.#######.#", "#.#.....#.#", "...##.##..."]),
+                       "###########", "#.#######.#", "#.#.....#.#", "...##.##..."], cell),
           sprite:make(["..#.....#..", "#..#...#..#", "#.#######.#", "###.###.###",
-                       "###########", ".#########.", "..#.....#..", ".#.......#."])].
+                       "###########", ".#########.", "..#.....#..", ".#.......#."], cell)].
 octopus := [sprite:make(["....####....", ".##########.", "############", "###..##..###",
-                         "############", "...##..##...", "..##.##.##..", "##........##"]),
+                         "############", "...##..##...", "..##.##.##..", "##........##"], cell),
             sprite:make(["....####....", ".##########.", "############", "###..##..###",
-                         "############", "..###..###..", ".##..##..##.", "..##....##.."])].
+                         "############", "..###..###..", ".##..##..##.", "..##....##.."], cell)].
 kindSprites := [squid, crab, octopus].
 cannonSprite := sprite:make(["......#......", ".....###.....", ".....###.....", ".############",
-                             "#############", "#############", "#############", "#############"]).
+                             "#############", "#############", "#############", "#############"], cell).
 deathSprites := [sprite:make(["....#....#...", ".#...#..#..#.", "..#.#.....#..", "...#....#....",
-                              "#.......#...#", "..#..#.#..#..", ".#..#.#.#..#.", "#..#.....#..#"]),
+                              "#.......#...#", "..#..#.#..#..", ".#..#.#.#..#.", "#..#.....#..#"], cell),
                  sprite:make(["#...#.....#..", "..#....#....#", ".#..#.#..#...", "....#...#..#.",
-                              "..#......#...", "#..#.#.#....#", ".#....#..#.#.", "#..#.#....#.."])].
+                              "..#......#...", "#..#.#.#....#", ".#....#..#.#.", "#..#.#....#.."], cell)].
 boomSprite := sprite:make(["....#...#....", ".#...#.#...#.", "..#.......#..", "...#.....#...",
-                           "##.........##", "...#.....#...", "..#..#.#..#..", ".#..#...#..#."]).
+                           "##.........##", "...#.....#...", "..#..#.#..#..", ".#..#...#..#."], cell).
 mysterySprite := sprite:make([".....######.....", "...##########...", "..############..",
                               ".##.##.##.##.##.", "################", "..###..###..###.",
-                              "...#.......#...."]).
-bombSprites := [sprite:make(["#..", ".#.", "..#", ".#.", "#..", ".#.", "..#"]),
-                sprite:make(["..#", ".#.", "#..", ".#.", "..#", ".#.", "#.."])].
+                              "...#.......#...."], cell).
+bombSprites := [sprite:make(["#..", ".#.", "..#", ".#.", "#..", ".#.", "..#"], cell),
+                sprite:make(["..#", ".#.", "#..", ".#.", "..#", ".#.", "#.."], cell)].
 bunkerRows := ["....##############....", "...################...", "..##################..",
                ".####################.", "######################", "######################",
                "######################", "######################", "######################",
@@ -165,7 +130,7 @@ bunkerRows := ["....##############....", "...################...", "..##########
 ; pixels: there is not a float in the game.
 
 invader := rect:new.
-invader:kind := #1. invader:frame := #1. invader:col := #1. invader:alive := true.
+invader:kind := #1. invader:frame := #1. invader:col := #1.
 invader:make := { kind, col, px, py | | v, s |
     v := self:new. s := kindSprites:at(kind):at(#1).
     v:kind := kind. v:col := col.
@@ -179,7 +144,7 @@ cannon := rect:make(#40, cannonY, @expr(cannonSprite:w * cell), @expr(cannonSpri
 
 ; A shot or a bomb: a rect with a vertical speed, gone off the screen.
 missile := rect:new.
-missile:vy := #0. missile:alive := true.
+missile:vy := #0.
 missile:make := { px, py, w, h, vy | | m |
     m := self:via(rect):make(px, py, w, h). m:vy := vy. m }.
 missile:step := {
@@ -197,7 +162,7 @@ bunker:make := { px, py | | bk |
             out:add(row:at(ci):equals("#")). ci := ci:inc }).
         out }).
     bk:rebuild. bk }.
-bunker:rebuild := { self:image := sprite:fromCells(self:cells) }.
+bunker:rebuild := { self:image := sprite:fromCells(self:cells, cell) }.
 bunker:paint := { self:image:paint(self:x, self:y) }.
 bunker:inside := { px, py |
     @expr(px >= self:x & px < self:right & py >= self:y & py < self:bottom) }.
@@ -234,13 +199,6 @@ bunker:trample := { r | | ci, cj |
 
 bunkers := [bunker:make(#96, #360), bunker:make(#232, #360),
             bunker:make(#368, #360), bunker:make(#504, #360)].
-
-; ---------------------------------------------------------------------------
-; Sound: one channel, the latest beep wins, and the continuous sound, the
-; mystery ship's siren, yields to anything that just happened.
-
-play := { t | t:play. lastSound := frames }.
-hum  := { t | @expr(frames - lastSound >= #3):ifTrue({ play:value(t) }) }.
 
 ; ---------------------------------------------------------------------------
 ; What happens
@@ -292,14 +250,14 @@ findLast := {
 endPass := {
     dropping := false.
     edgeHit:ifTrue({ direction := direction:negated. dropping := true. edgeHit := false }).
-    hum:value(marchTones:at(marchNote)). marchNote := @expr(marchNote:mod(#4) + #1) }.
+    marchTones:at(marchNote):hum. marchNote := @expr(marchNote:mod(#4) + #1) }.
 
 ; An invader hit: the points, an explosion where it was, and the tempo.
 kill := { v |
     v:alive := false. standing := standing:dec.
     score := @expr(score + v:points).
     booms:add([v:x, v:y, #16]).
-    play:value(hitTone) }.
+    hitTone:play }.
 
 ; The lowest live invader in a column, or nil.
 lowestIn := { col | | found |
@@ -316,9 +274,9 @@ fire := {
     shot:isNil:ifTrue({
         shot := missile:make(@expr(cannon:x + cannon:w / #2 - #1), @expr(cannon:y - #8), #2, #8, shotSpeed:negated).
         shotsFired := shotsFired:inc.
-        play:value(fireTone) }) }.
+        fireTone:play }) }.
 
-killCannon := { dying := #90. play:value(deathTone) }.
+killCannon := { dying := #90. deathTone:play }.
 
 newGame := {
     score := #0. lives := #3. wave := #0. nextBonus := #1500. shotsFired := #0.
@@ -371,7 +329,7 @@ spawnWave:value.                     ; the block, to look at before a game
             mystery:notNil:and({ shot:alive }):and({ shot:touches(mystery) }):ifTrue({
                 score := @expr(score + mysteryWorth).
                 mysteryShownAt := mystery:x. mysteryShownIn := #40.
-                mystery := nil. shot:alive := false. play:value(mysteryHit) }).
+                mystery := nil. shot:alive := false. mysteryHit:play }).
             bombs:do({ m |
                 shot:alive:and({ m:alive }):and({ shot:touches(m) }):ifTrue({
                     shot:alive := false. m:alive := false }) }).
@@ -395,7 +353,7 @@ spawnWave:value.                     ; the block, to look at before a game
             mystery:x := @expr(mystery:x + mysteryDx).
             mystery:right:lessThan(#0):or({ mystery:x:greaterThan(width) }):ifTrue({ mystery := nil }).
             frames:mod(#8):equals(#0):ifTrue({
-                hum:value(mysteryTones:at(@expr(frames / #8):mod(#2):inc)) }) }).
+                mysteryTones:at(@expr(frames / #8):mod(#2):inc):hum }) }).
         mystery:isNil:ifTrue({
             mysteryIn := mysteryIn:dec.
             mysteryIn:equals(#0):ifTrue({
@@ -414,7 +372,7 @@ spawnWave:value.                     ; the block, to look at before a game
 
         ; -- the extra cannon, and the next wave
         score:greaterOrEqual(nextBonus):ifTrue({
-            lives := lives:inc. nextBonus := @expr(nextBonus + #1500). play:value(bonusTone) }).
+            lives := lives:inc. nextBonus := @expr(nextBonus + #1500). bonusTone:play }).
         standing:equals(#0):ifTrue({
             waveIn := waveIn:inc.
             waveIn:greaterThan(#90):ifTrue({ spawnWave:value }) }) }).

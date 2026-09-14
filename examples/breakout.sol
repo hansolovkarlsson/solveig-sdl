@@ -80,7 +80,7 @@ i := #0. j := #0.
 ; what it is worth and what colour it is.
 
 brick := rect:new.
-brick:row := #1. brick:alive := true.
+brick:row := #1.
 brick:make := { left, top, r | | b |
     b := self:via(rect):make(left, top, brickWidth, brickHeight).
     b:row := r. b }.

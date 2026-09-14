@@ -10,23 +10,28 @@
 ; README applies at this boundary too: a third game that wants something the
 ; two did not is the reason to add it, and not before. The third game was
 ; Asteroids, and it asked for nothing; what the reading of three found was
-; a seam inside the fifth thing, which is `mover` now.
+; a seam inside the fifth thing, which is `mover` now. The fourth was
+; Invaders, which asked for nothing either, and the reading of four moved
+; three things in: the sprite, which the font had been all along; `alive`
+; on a rect; and `hum`, which two games had written the same way.
 ;
 ;   engine    opens the window and binds `screen`, `width`, `height`,
 ;             `running` and `frames`; drains the queue, and shows a frame
 ;   keys      which keys are held, kept from the events, asked by name
-;   font      the 3x5 cell digits every score was drawn with
-;   rect      an integer rectangle: overlap, edges, clamping, a fill
+;   sprite    rows of text compiled once to runs, painted with `fill`
+;   font      the 3x5 cell digits every score was drawn with, ten sprites
+;   rect      an integer rectangle: overlap, edges, clamping, a fill, `alive`
 ;   mover     a float position and velocity, one move a frame, `alive`
 ;   ball      a mover with an integer shadow, `box`, which is a rect,
 ;             crossed once a frame by `settle`
-;   tone      a pitch and a length, played by `sdl:beep`
+;   tone      a pitch and a length, played by `sdl:beep`; `hum` for a sound
+;             that is continuous, since the channel is one
 ;
 ; **The game keeps its loop.** `engine:drain` empties the queue and hands each
 ; event on; the `whileTrue` around it is the program's own, as it was in both
 ; games and as the README argues it should be. Nothing here calls back.
 ;
-; **What an included file binds are ordinary globals**, so the seven names
+; **What an included file binds are ordinary globals**, so the eight names
 ; above and the five the engine binds when it opens are the whole of what
 ; this file takes from the namespace.
 
@@ -83,9 +88,49 @@ keys:any := { names |
     names:inject(false, { seen, name | seen:or({ self:down(name) }) }) }.
 
 ; ---------------------------------------------------------------------------
-; The digits, 3 wide and 5 high, as rows of text. `#` is a cell and `.` is a
-; gap. Ten of them, in order, so `digits:at(d:inc)` is the digit d. This is
-; how the 1972 machine drew its score, and it is text enough for one.
+; A sprite: rows of text, `#` a cell and `.` a gap, compiled once to
+; horizontal runs, so that painting it is one `sdl:fill` per run rather
+; than one per cell. `fromCells` is the same over rows of booleans, which
+; is what a picture that changes keeps. Written for Invaders, and found at
+; the reading of four to be what the font had been doing slowly since the
+; first game: a digit is a 3x5 sprite.
+
+sprite := object:new.
+sprite:w := #0. sprite:h := #0. sprite:cell := #1. sprite:runs := nil.
+sprite:fromCells := { cells, cell | | s, row, start, ci, cj |
+    s := self:new.
+    s:h := cells:size. s:w := cells:at(#1):size. s:cell := cell. s:runs := [].
+    cj := #1.
+    { cj:lessOrEqual(s:h) }:whileTrue({
+        row := cells:at(cj). start := #0. ci := #1.
+        { ci:lessOrEqual(s:w) }:whileTrue({
+            row:at(ci):ifElse(
+                { start:equals(#0):ifTrue({ start := ci }) },
+                { start:greaterThan(#0):ifTrue({
+                    s:runs:add([cj, start, @expr(ci - start)]). start := #0 }) }).
+            ci := ci:inc }).
+        start:greaterThan(#0):ifTrue({ s:runs:add([cj, start, @expr(s:w + #1 - start)]) }).
+        cj := cj:inc }).
+    s }.
+sprite:make := { rows, cell |
+    self:fromCells(rows:collect({ row | | out, ci |
+        out := []. ci := #1.
+        { ci:lessOrEqual(row:size) }:whileTrue({
+            out:add(row:at(ci):equals("#")). ci := ci:inc }).
+        out }), cell) }.
+; At (px, py), its top-left, in the current colour.
+sprite:paint := { px, py | | c |
+    c := self:cell.
+    self:runs:do({ r |
+        sdl:fill(screen, @expr(px + (r:at(#2) - #1) * c),
+                         @expr(py + (r:at(#1) - #1) * c),
+                         @expr(r:at(#3) * c), c) }) }.
+
+; ---------------------------------------------------------------------------
+; The digits, 3 wide and 5 high, ten sprites in order so that
+; `digits:at(d:inc)` is the digit d. This is how the 1972 machine drew its
+; score, and four games have found it text enough. The cell is fixed when
+; the file is compiled in.
 
 font := object:new.
 font:cell := #6.                     ; one cell, in pixels
@@ -99,22 +144,10 @@ font:digits := [
     ["###", "#..", "###", "#.#", "###"],
     ["###", "..#", "..#", "..#", "..#"],
     ["###", "#.#", "###", "#.#", "###"],
-    ["###", "#.#", "###", "..#", "###"]].
+    ["###", "#.#", "###", "..#", "###"]]:collect({ rows | sprite:make(rows, font:cell) }).
 
 ; One digit with its top-left cell at (left, top), in the current colour.
-font:digit := { d, left, top | | glyph, row, i, j, c |
-    c := self:cell.
-    glyph := self:digits:at(d:inc).
-    j := #1.
-    { j:lessOrEqual(#5) }:whileTrue({
-        row := glyph:at(j).
-        i := #1.
-        { i:lessOrEqual(#3) }:whileTrue({
-            row:at(i):equals("#"):ifTrue({
-                sdl:fill(screen, @expr(left + (i - #1) * c),
-                                 @expr(top + (j - #1) * c), c, c) }).
-            i := i:inc }).
-        j := j:inc }) }.
+font:digit := { d, left, top | self:digits:at(d:inc):paint(left, top) }.
 
 ; A number, right-aligned so that its last digit ends at `right`, with as
 ; many digits as it has.
@@ -136,6 +169,7 @@ font:number := { value, right, top | | n, left, c |
 
 rect := object:new.
 rect:x := #0. rect:y := #0. rect:w := #0. rect:h := #0.
+rect:alive := true.
 rect:make := { left, top, w, h | | r |
     r := self:new. r:x := left. r:y := top. r:w := w. r:h := h. r }.
 rect:right  := { @expr(self:x + self:w) }.
@@ -203,9 +237,15 @@ ball:paint := { self:box:paint }.
 
 ; ---------------------------------------------------------------------------
 ; A sound: pitch in hertz, length in milliseconds, so a game names its tones
-; once and plays them by name.
+; once and plays them by name. Two games wanted the channel policy below.
 
 tone := object:new.
 tone:hz := #440. tone:ms := #50.
+tone:lastAt := #0.                   ; the frame the channel last played
 tone:make := { hz, ms | | t | t := self:new. t:hz := hz. t:ms := ms. t }.
-tone:play := { sdl:beep(self:hz, self:ms) }.
+tone:play := { sdl:beep(self:hz, self:ms). tone:lastAt := frames }.
+
+; The channel is one and the latest beep wins, so a sound that is
+; continuous, a thrust, a siren, a march, is asked for again from the
+; frame with `hum`, and yields to anything that just happened.
+tone:hum := { @expr(frames - tone:lastAt >= #3):ifTrue({ self:play }) }.

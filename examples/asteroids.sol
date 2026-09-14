@@ -30,7 +30,9 @@
 ; nothing: `sdl:line` is the whole of the vector display, the trigonometry
 ; is the machine's, and the continuous sounds, thrust and siren and the
 ; heartbeat, would be `sdl:beep` re-issued from the frame, since a beep
-; that is about now can be asked for again now.
+; that is about now can be asked for again now. (The re-issuing became
+; `tone:hum` in the engine at the reading of four, when Invaders wanted it
+; the same way.)
 ;
 ; **What is here that neither game had**: a shape is a list of unit points
 ; drawn as lines after one rotation and one scale, so a rock is nine
@@ -81,7 +83,6 @@ sirenTones := [[tone:make(#180, #80), tone:make(#220, #80)],
 heartTones := [tone:make(#50, #60), tone:make(#40, #60)].
 bonusTone  := tone:make(#1000, #80).
 hyperTone  := tone:make(#300, #60).
-lastSound  := #0.                    ; the frame something last played
 
 ; -- the game
 score := #0. lives := #0. wave := #0. nextBonus := #10000.
@@ -217,7 +218,7 @@ craft:fire := { | angle |
                          + (rng:fraction - 0.5) * 2.0 * saucerAim) },
         { angle := @expr(rng:fraction * tau) }).
     saucerShots:add(shot:make(self:x, self:y, angle, 6.0)).
-    play:value(fireTone) }.
+    fireTone:play }.
 craft:paint := { | s |
     s := self:r.
     draw:value(hullShape, self:x, self:y, 0.0, s).
@@ -243,14 +244,6 @@ mote:paint := {
         { sdl:fill(screen, self:x:truncated, self:y:truncated, #2, #2) }) }.
 
 ; ---------------------------------------------------------------------------
-; Sound. One channel, and the latest beep wins, so a sound that is
-; continuous, the thrust, the siren, the heartbeat, is asked for again
-; from the frame and yields to anything that just happened.
-
-play := { t | t:play. lastSound := frames }.
-hum  := { t | @expr(frames - lastSound >= #3):ifTrue({ play:value(t) }) }.
-
-; ---------------------------------------------------------------------------
 ; What happens to things
 
 ; A rock breaks: dots, two smaller rocks or none, and the bang for its size.
@@ -264,7 +257,7 @@ burst := { k, worth |
         born:add(rock:make(k:size:dec, k:x, k:y)).
         born:add(rock:make(k:size:dec, k:x, k:y)) }).
     worth:ifTrue({ score := @expr(score + rockScore:at(k:size)) }).
-    play:value(bangTones:at(k:size)) }.
+    bangTones:at(k:size):play }.
 
 ; The saucer goes, with or without the points.
 downSaucer := { worth |
@@ -274,7 +267,7 @@ downSaucer := { worth |
         debris:add(mote:make(saucer:x, saucer:y, false, #30)). i := i:inc }).
     worth:ifTrue({
         score := @expr(score + saucer:small:ifElse({ saucerSmall }, { saucerLarge })) }).
-    play:value(bangTones:at(#2)).
+    bangTones:at(#2):play.
     saucer := nil. saucerIn := @expr(saucerAfter + rng:upTo(#600)) }.
 
 ; The ship goes: four lines of it fly apart, and the next one comes when
@@ -284,7 +277,7 @@ killShip := {
     i := #0.
     { i:lessThan(#4) }:whileTrue({
         debris:add(mote:make(ship:x, ship:y, true, #70)). i := i:inc }).
-    play:value(bangTones:at(#3)).
+    bangTones:at(#3):play.
     lives := lives:dec.
     lives:equals(#0):ifElse({ state := 'over }, { respawnIn := #120 }) }.
 
@@ -314,10 +307,10 @@ fire := {
                        ship:heading, shotSpeed).
         k:vx := @expr(k:vx + ship:vx). k:vy := @expr(k:vy + ship:vy).
         shots:add(k).
-        play:value(fireTone) }) }.
+        fireTone:play }) }.
 
 hyperspace := {
-    ship:mode := 'hyper. hyperIn := #60. play:value(hyperTone) }.
+    ship:mode := 'hyper. hyperIn := #60. hyperTone:play }.
 
 newGame := {
     score := #0. lives := #3. wave := #0. nextBonus := #10000.
@@ -344,7 +337,7 @@ spawnWave:value.                     ; something to look at before a game
     ship:mode:equals('alive):ifTrue({
         keys:any(leftKeys):ifTrue({ ship:heading := @expr(ship:heading - turnRate) }).
         keys:any(rightKeys):ifTrue({ ship:heading := @expr(ship:heading + turnRate) }).
-        keys:any(thrustKeys):ifTrue({ ship:thrust. hum:value(thrustTone) }).
+        keys:any(thrustKeys):ifTrue({ ship:thrust. thrustTone:hum }).
         ship:coast.
         ship:step }).
     ship:mode:equals('hyper):ifTrue({
@@ -396,7 +389,7 @@ spawnWave:value.                     ; something to look at before a game
     ; -- what comes next
     state:equals('playing):ifTrue({
         score:greaterOrEqual(nextBonus):ifTrue({
-            lives := lives:inc. nextBonus := @expr(nextBonus + #10000). play:value(bonusTone) }).
+            lives := lives:inc. nextBonus := @expr(nextBonus + #10000). bonusTone:play }).
         rocks:size:equals(#0):ifTrue({
             waveIn:equals(#0):ifTrue({ waveIn := #120 }).
             waveIn := waveIn:dec.
@@ -409,11 +402,11 @@ spawnWave:value.                     ; something to look at before a game
         ; the heartbeat, quicker as the rocks go
         heartIn := heartIn:dec.
         heartIn:lessOrEqual(#0):ifTrue({
-            hum:value(heartTones:at(heartBeat)).
+            heartTones:at(heartBeat):hum.
             heartBeat := @expr(#3 - heartBeat).
             heartIn := @expr(#12 + rocks:size * #4) }) }).
     saucer:notNil:and({ frames:mod(#10):equals(#0) }):ifTrue({
-        hum:value(sirenTones:at(saucer:small:ifElse({ #2 }, { #1 })):at(sirenBeat)).
+        sirenTones:at(saucer:small:ifElse({ #2 }, { #1 })):at(sirenBeat):hum.
         sirenBeat := @expr(#3 - sirenBeat) }).
     state:equals('over):and({ debris:size:equals(#0) }):ifTrue({ state := 'attract }).
 
