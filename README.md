@@ -96,7 +96,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The four examples
+## The five examples
 
 | | |
 | --- | --- |
@@ -104,6 +104,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/circles.sol`](examples/circles.sol) | bouncing discs — click to add one, space to clear, Escape to quit |
 | [`examples/mandelbrot.sol`](examples/mandelbrot.sol) | an explorer — click to zoom in, right-click out, `r` to reset, Escape to quit |
 | [`examples/pong.sol`](examples/pong.sol) | the game: `W`/`S` and `Up`/`Down`, `C` hands a paddle to the machine, Space serves, first to eleven |
+| [`examples/breakout.sol`](examples/breakout.sol) | the second game: `Left`/`Right` or the mouse, Space serves, three balls, the 1976 rules |
 
 ```sh
 ../Solveig/bin/solas examples/mandelbrot.sol -o examples/mandelbrot.sob
@@ -159,6 +160,19 @@ lengths. That is the trigger this file's last section names, met for the
 first time. The machine plays the right paddle until `C` hands it over, and it
 follows the ball a little slower than the ball can be made to go, which is
 what makes it beatable.
+
+**`breakout.sol` is the second game, and it added nothing.** Not to `sdl.c`,
+and not to a shared file either: the frame loop, the drained queue, the held
+keys, the 3×5 font, the beep and the float-to-integer line are written out
+again in the same shape, deliberately, because the engine is *what is left
+after the second game* and the way to read that off is two whole games side
+by side rather than one game and a library extracted from a sample of one.
+What the file has that Pong did not need is a hundred and twelve things of one
+kind: a brick is an object delegating to one prototype, the wall is a `do`
+that paints and a `do` that collides, and that is the whole of the new part.
+The rules are the 1976 machine's: four speed-ups, a paddle halved by the top
+wall, a second wall once. Nothing plays it for you; a self-playing copy was
+used to check the physics and thrown away.
 
 ## Reference
 

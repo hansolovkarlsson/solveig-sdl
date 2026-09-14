@@ -6,6 +6,7 @@
 #   make circles        build it and run examples/circles.sol
 #   make mandelbrot     build it and run examples/mandelbrot.sol
 #   make pong           build it and play
+#   make breakout       build it and play the second game
 #   make clean
 #
 # This is an *extension*, so it is not part of Solveig and does not build with
@@ -58,7 +59,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot pong clean check
+.PHONY: all run bounce circles mandelbrot pong breakout clean check
 
 all: $(TARGET)
 
@@ -100,6 +101,11 @@ mandelbrot: all
 # The game the reference says this binding can write, written to check it.
 pong: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/pong.sol
+
+# The second game, written whole rather than over Pong's parts, so that what
+# the two share can be read off rather than guessed at.
+breakout: all
+	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/breakout.sol
 
 clean:
 	rm -rf $(BUILD)
