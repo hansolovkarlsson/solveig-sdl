@@ -96,13 +96,14 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The three examples
+## The four examples
 
 | | |
 | --- | --- |
 | [`examples/bounce.sol`](examples/bounce.sol) | a ball, a wall, and the smallest loop that owns itself |
 | [`examples/circles.sol`](examples/circles.sol) | bouncing discs — click to add one, space to clear, Escape to quit |
 | [`examples/mandelbrot.sol`](examples/mandelbrot.sol) | an explorer — click to zoom in, right-click out, `r` to reset, Escape to quit |
+| [`examples/pong.sol`](examples/pong.sol) | the game: `W`/`S` and `Up`/`Down`, `C` hands a paddle to the machine, Space serves, first to eleven |
 
 ```sh
 ../Solveig/bin/solas examples/mandelbrot.sol -o examples/mandelbrot.sob
@@ -110,7 +111,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 ```
 
 **`circles.sol` draws a shape this binding does not have.** There is no
-`sdl:circle`: the eleven messages draw rectangles and lines, so a disc is
+`sdl:circle`: the drawing messages are rectangles and lines, so a disc is
 something the program works out — for each of its rows, half the width is the
 square root of `r² - dy²`, and that row is one `sdl:line`. Six lines of Solveig,
 about sixty calls for a ball of thirty.
@@ -145,10 +146,24 @@ to look, and nothing calls back into it.
 Both want an optimised Solveig. The default `make` there is `-g` with no
 optimiser, and the five passes take 10.2 seconds against 2.2.
 
+**`pong.sol` is the sentence at the end of this file, checked.** The reference
+said *you can write Pong*, and the way to find out whether eleven messages are
+enough for a game is to write one over them and add nothing. Two of the three
+things the game wanted and the binding lacked took a few lines of the program:
+the score is a 3×5 cell font out of `sdl:fill`, which is how the original drew
+its digits, and a held key is four booleans kept from `'keyDown` and `'keyUp`,
+since there is no keyboard state to ask for. The third could not be written in
+the language at all, and it is the twelfth message: `sdl:beep` is the square
+wave the original made, and the game's three tones are its pitches and
+lengths. That is the trigger this file's last section names, met for the
+first time. The machine plays the right paddle until `C` hands it over, and it
+follows the ball a little slower than the ball can be made to go, which is
+what makes it beatable.
+
 ## Reference
 
-Eleven messages, ten of them distinct. Everything that draws answers the screen,
-so calls chain.
+Twelve messages, eleven of them distinct. Everything that draws answers the
+screen, so calls chain.
 
 ### Opening
 
@@ -183,7 +198,7 @@ drain what has happened, draw a frame, come back.
 | slot | on which kinds |
 | --- | --- |
 | `event:kind` | always — `'quit` `'keyDown` `'keyUp` `'mouseDown` `'mouseUp` `'mouseMove` `'other` |
-| `event:key` | `'keyDown` `'keyUp` — `"Escape"`, `"a"`, `"Left"` |
+| `event:key` | `'keyDown` `'keyUp` — `"Escape"`, `"A"`, `"Left"`. SDL names a letter key in upper case whichever way it was typed |
 | `event:repeat` | `'keyDown` `'keyUp` — `#1` when the key is repeating |
 | `event:x` `event:y` | the three mouse kinds |
 | `event:button` | `'mouseDown` `'mouseUp` |
@@ -195,12 +210,26 @@ drain what has happened, draw a frame, come back.
 | `sdl:wait(#milliseconds)` | Answers `nil`. |
 | `sdl:ticks` | Milliseconds since `sdl:start`, as an integer. |
 
+### Sound
+
+| | |
+| --- | --- |
+| `sdl:beep(#hertz, #milliseconds)` | A square wave, from `#20` to `#20000` hertz and up to ten seconds. Answers `true`, or `false` on a machine with nothing to play it on, which is silence rather than an error for the same reason a machine with no acceleration gets software rendering. |
+
+The samples are written by the extension and queued, so there is no audio
+callback: the one place SDL offers to call into a program is declined here for
+the reason the top of this file gives. The device is opened by the first beep,
+not by `sdl:start`, so a program that never beeps holds no sound device. A beep
+drops whatever was still queued, because a beep is about now and a tone that
+waits its turn is a tone about a moment ago. It ends on a whole period, so it
+does not click.
+
 ### Failures
 
 Every message checks its own arity and argument types, and names the message:
 
 ```
-'fill' expects integers, got float -- a coordinate is written with '#',
+'fill' expects integers, got float -- an integer is written with '#',
 and a float becomes one with 'truncated'
 'clear' expects a screen, got nil
 'poll' before sdl:start
@@ -216,7 +245,7 @@ asks anything else:
 
 ```
 event:kind        ; -- 'quit 'keyDown 'keyUp 'mouseDown 'mouseUp 'mouseMove 'other
-event:key         ; -- "Escape", "a", "Left"      (keyDown, keyUp)
+event:key         ; -- "Escape", "A", "Left"      (keyDown, keyUp)
 event:x  event:y  ; -- (mouseDown, mouseUp, mouseMove)
 event:button      ; -- (mouseDown, mouseUp)
 ```
@@ -270,13 +299,15 @@ anything:
 | | |
 | --- | --- |
 | `SDL_*` functions exported by libSDL2 | **837** |
-| distinct ones this extension calls | **15** |
-| messages it publishes | **11**, ten distinct |
+| distinct ones this extension calls | **20** |
+| messages it publishes | **12**, eleven distinct |
 
 **What is missing.** No textures and no images, so nothing but solid rectangles
-and lines. No text rendering, no audio, no gamepads, no fullscreen, and no
-immediate keyboard state — only events. You can write Pong. You cannot write
-anything that needs to draw a sprite.
+and lines. No text rendering, no samples or music, no gamepads, no fullscreen,
+and no immediate keyboard state — only events. You can write Pong, and
+[`examples/pong.sol`](examples/pong.sol) is that sentence checked: it wanted
+one thing the eleven messages could not give, and `beep` is that thing. You
+cannot write anything that needs to draw a sprite.
 
 **It is a demonstration that a second back end needs nothing the first one did
 not**, which was the question it was written to answer. It does not.
@@ -292,7 +323,8 @@ small enough and regular enough that hand-writing is the right answer all the
 way up. Eight hundred functions, of which a game wants perhaps two hundred.
 
 **Nothing is waiting on it.** The trigger is a program that wants something this
-does not have.
+does not have, and `beep` is the one time it has fired: Pong could draw its
+score and hold its keys in the language, and could not make a sound.
 
 ## Licence
 

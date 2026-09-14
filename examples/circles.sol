@@ -7,7 +7,7 @@
 ;   Escape       quit
 ;
 ; **There is no `sdl:circle`, and that is the point of this example.** The
-; eleven messages draw rectangles and lines, so a disc is something the program
+; drawing messages are rectangles and lines, so a disc is something the program
 ; works out: for each row of it, half the width is the square root of
 ; `r^2 - dy^2`, and that row is one `sdl:line`. About sixty lines for a ball of
 ; thirty, which is nothing.

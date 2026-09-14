@@ -67,13 +67,14 @@ static bool args(SolVM *vm, const char *name, int argc, int wanted)
 /* Every drawing message takes integers, and a float is the mistake a program
    will actually make -- `x` from a physics step is a float, and `#` is what
    turns it into a coordinate. So the message says that rather than only
-   refusing. */
+   refusing. It says "an integer" and not "a coordinate" because `wait` and
+   `beep` check the same way and neither takes one. */
 static bool ints(SolVM *vm, const char *name, SolValue *a, int from, int count)
 {
     for (int i = from; i < from + count; i++) {
         if (SOL_IS_INT(a[i])) continue;
         sol_vm_runtime_error(vm,
-            "'%s' expects integers, got %s -- a coordinate is written with '#', "
+            "'%s' expects integers, got %s -- an integer is written with '#', "
             "and a float becomes one with 'truncated'", name, sol_type_name(a[i]));
         return false;
     }
@@ -374,6 +375,90 @@ static SolValue prim_ticks(SolVM *vm, SolValue self, SolValue *a, int argc)
     return SOL_INT_VAL((int64_t)SDL_GetTicks());
 }
 
+/* ---- sound --------------------------------------------------------------- */
+
+/* sdl:beep(#hertz, #milliseconds) -- a square wave, the sound the 1972 machine
+ * made and the one message Pong asked for after eleven had drawn it.
+ *
+ * The samples are written here and queued with `SDL_QueueAudio`, so there is
+ * no audio callback: the one place SDL offers to call into a program is the
+ * one place this binding declines, for the reason at the top of the file. The
+ * device is opened by the first beep rather than by `sdl:start`, since a
+ * program that never beeps should not hold a sound device, and it is never
+ * closed by hand -- SDL's own shutdown reclaims it with the window.
+ *
+ * A machine with nothing to play on gets `false` and silence rather than an
+ * error, the way a machine with no acceleration gets software rendering: a
+ * game is still a game with the sound off, and a headless run is the case
+ * that would otherwise refuse. The refusal is remembered, so a beep costs one
+ * failed open and not one per frame.
+ *
+ * What is already queued is dropped first. A beep is about now, and a wall
+ * tone that has to wait for the paddle tone to finish is a tone about a moment
+ * ago. */
+#define BEEP_RATE 44100
+
+static SDL_AudioDeviceID speaker;
+static bool speaker_refused;
+
+static bool open_speaker(void)
+{
+    if (speaker) return true;
+    if (speaker_refused) return false;
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO) != 0) { speaker_refused = true; return false; }
+
+    SDL_AudioSpec want = { 0 }, have;
+    want.freq     = BEEP_RATE;
+    want.format   = AUDIO_S16SYS;
+    want.channels = 1;
+    want.samples  = 512;
+    speaker = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    if (speaker == 0) { speaker_refused = true; return false; }
+    SDL_PauseAudioDevice(speaker, 0);
+    return true;
+}
+
+static SolValue prim_beep(SolVM *vm, SolValue self, SolValue *a, int argc)
+{
+    (void)self;
+    if (!args(vm, "beep", argc, 2)) return SOL_NIL_VAL;
+    if (!ready(vm, "beep")) return SOL_NIL_VAL;
+    if (!ints(vm, "beep", a, 0, 2)) return SOL_NIL_VAL;
+    int64_t hertz = SOL_AS_INT(a[0]), ms = SOL_AS_INT(a[1]);
+    if (hertz < 20 || hertz > 20000) {
+        sol_vm_runtime_error(vm, "'beep' wants a pitch from #20 to #20000 hertz, got #%lld",
+                             (long long)hertz);
+        return SOL_NIL_VAL;
+    }
+    if (ms < 0 || ms > 10000) {
+        sol_vm_runtime_error(vm, "'beep' wants a length from #0 to #10000 milliseconds, got #%lld",
+                             (long long)ms);
+        return SOL_NIL_VAL;
+    }
+    if (!open_speaker()) return SOL_BOOL_VAL(false);
+
+    /* Whole periods only, so the tone ends where the wave crosses zero and
+       does not click on the way out. */
+    int period = BEEP_RATE / (int)hertz;
+    int count  = (int)(BEEP_RATE * ms / 1000) / period * period;
+    int16_t *samples = malloc((size_t)count * sizeof *samples);
+    if (samples == NULL) {
+        sol_vm_runtime_error(vm, "sdl:beep -- out of memory");
+        return SOL_NIL_VAL;
+    }
+    for (int i = 0; i < count; i++)
+        samples[i] = (i % period) * 2 < period ? 6000 : -6000;
+
+    SDL_ClearQueuedAudio(speaker);
+    int queued = SDL_QueueAudio(speaker, samples, (Uint32)count * sizeof *samples);
+    free(samples);
+    if (queued != 0) {
+        sol_vm_runtime_error(vm, "sdl:beep -- %s", SDL_GetError());
+        return SOL_NIL_VAL;
+    }
+    return SOL_BOOL_VAL(true);
+}
+
 /* ---- installation -------------------------------------------------------- */
 
 int sol_extension_init(SolVM *vm, int abi)
@@ -398,6 +483,8 @@ int sol_extension_init(SolVM *vm, int abi)
     sol_object_define_primitive(vm, sdl, "poll",    prim_poll);
     sol_object_define_primitive(vm, sdl, "wait",    prim_wait);
     sol_object_define_primitive(vm, sdl, "ticks",   prim_ticks);
+
+    sol_object_define_primitive(vm, sdl, "beep",    prim_beep);
 
     sol_vm_set_global(vm, "sdl", SOL_OBJ_VAL(sdl));
     return 0;

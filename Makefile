@@ -5,6 +5,7 @@
 #   make bounce         the same, said by name
 #   make circles        build it and run examples/circles.sol
 #   make mandelbrot     build it and run examples/mandelbrot.sol
+#   make pong           build it and play
 #   make clean
 #
 # This is an *extension*, so it is not part of Solveig and does not build with
@@ -57,7 +58,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot clean check
+.PHONY: all run bounce circles mandelbrot pong clean check
 
 all: $(TARGET)
 
@@ -95,6 +96,10 @@ circles: all
 # The other example. It wants an optimised Solveig -- see the note in the file.
 mandelbrot: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/mandelbrot.sol
+
+# The game the reference says this binding can write, written to check it.
+pong: all
+	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/pong.sol
 
 clean:
 	rm -rf $(BUILD)
