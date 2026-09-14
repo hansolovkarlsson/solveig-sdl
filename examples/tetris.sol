@@ -26,7 +26,7 @@
 ; and third tunes.
 ;
 ; **What was predicted before this was written.** That of the engine's
-; thirteen names, `engine`, `keys`, `font` and `tone` would carry a seventh
+; twelve names, `engine`, `keys`, `font` and `tone` would carry a seventh
 ; game and nothing else would carry this one: nothing here has a float
 ; position, a radius, a heading or a box, because a piece is four cells in a
 ; grid and the grid is the state, which is the first time the screen is
@@ -38,7 +38,10 @@
 ; second game to name a number, so `letters`, `glyphs` and `label` are
 ; copied from lander.sol as Spacewar copied Asteroids' `thing`, with this
 ; game's twelve letters, and the trigger the reading of six wrote down is
-; met: the second word in a second game. That the tune is a sequence of
+; met: the second word in a second game. (It was, and the reading of seven
+; moved them: `font:word` is the engine's, with all twenty-six letters, and
+; this file keeps none; the generator and the two key lists went in at the
+; same reading.) That the tune is a sequence of
 ; tones stepped by the frame through the one-channel policy, the way
 ; Invaders' four-note march is, and is one game's. And that the binding
 ; would be asked for nothing.
@@ -50,14 +53,12 @@
 
 engine:open("tetris", #640, #480).
 
-rng := random:new.
-
 ; -- the well
 cols := #10. rows := #20.
 cell := #20.                         ; one cell, in pixels
 wellLeft := #220. wellTop := #40.
 
-leftKeys := ["Left", "A"]. rightKeys := ["Right", "D"]. downKeys := ["Down", "S"].
+downKeys := ["Down", "S"].
 
 ; -- the rules
 dasDelay := #16. dasRate := #6.      ; a held key repeats after 16 frames, then every 6
@@ -176,34 +177,6 @@ collapse := { | kept, w |
     full:size:repeat({ w:add(emptyRow:value) }).
     kept:do({ r | w:add(r) }).
     well := w }.
-
-; ---------------------------------------------------------------------------
-; Words, in the same cells as the digits. Only the letters the five words
-; use; a sixth word would add its letters here.
-
-letters := #[
-    "C" = ["###", "#..", "#..", "#..", "###"],
-    "E" = ["###", "#..", "##.", "#..", "###"],
-    "I" = ["###", ".#.", ".#.", ".#.", "###"],
-    "L" = ["#..", "#..", "#..", "#..", "###"],
-    "N" = ["##.", "#.#", "#.#", "#.#", "#.#"],
-    "O" = ["###", "#.#", "#.#", "#.#", "###"],
-    "P" = ["###", "#.#", "###", "#..", "#.."],
-    "R" = ["###", "#.#", "##.", "#.#", "#.#"],
-    "S" = ["###", "#..", "###", "..#", "###"],
-    "T" = ["###", ".#.", ".#.", ".#.", ".#."],
-    "V" = ["#.#", "#.#", "#.#", "#.#", ".#."],
-    "X" = ["#.#", "#.#", ".#.", "#.#", "#.#"]].
-glyphs := dictionary:new.
-["C", "E", "I", "L", "N", "O", "P", "R", "S", "T", "V", "X"]:do({ ch |
-    glyphs:atPut(ch, sprite:make(letters:at(ch), font:cell)) }).
-
-; A word with its top-left at (left, top).
-label := { text, left, top | | k |
-    k := #1.
-    { k:lessOrEqual(text:size) }:whileTrue({
-        glyphs:at(text:at(k)):paint(@expr(left + (k - #1) * #4 * font:cell), top).
-        k := k:inc }) }.
 
 ; ---------------------------------------------------------------------------
 ; The tune: notes as a pitch and a length in eighths, twelve frames each,
@@ -412,11 +385,11 @@ well := emptyWell:value.             ; the empty well, to look at before a game
             cj:greaterOrEqual(#1):ifTrue({
                 cellAt:value(@expr(current:col + c:at(#1)), cj, current:hue) }) }) }).
     sdl:colour(screen, #252, #252, #252).
-    label:value("LINES", #16, #48).  font:number(lines, #200, #78).
-    label:value("SCORE", #16, #130). font:number(score, #200, #160).
-    label:value("TOP", #16, #212).   font:number(best, #200, #242).
-    label:value("NEXT", #440, #48).
-    label:value("LEVEL", #440, #180). font:number(level, #600, #210).
+    font:word("LINES", #16, #48).  font:number(lines, #200, #78).
+    font:word("SCORE", #16, #130). font:number(score, #200, #160).
+    font:word("TOP", #16, #212).   font:number(best, #200, #242).
+    font:word("NEXT", #440, #48).
+    font:word("LEVEL", #440, #180). font:number(level, #600, #210).
     next:notNil:and({ state:equals('attract):not }):ifTrue({
         kinds:at(next):turns:at(#1):do({ c |
             paintCell:value(@expr(#480 + c:at(#1) * cell), @expr(#90 + c:at(#2) * cell),

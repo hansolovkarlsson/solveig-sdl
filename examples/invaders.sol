@@ -50,9 +50,7 @@ engine:open("invaders", #640, #480).
 
 cell := #2.                          ; one picture cell, in pixels
 ground := #456.
-rng := random:new.
 
-leftKeys := ["Left", "A"]. rightKeys := ["Right", "D"].
 
 ; -- the cannon
 cannonSpeed := #3.

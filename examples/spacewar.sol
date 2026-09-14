@@ -37,7 +37,6 @@
 
 engine:open("spacewar", #640, #480).
 
-rng := random:new.
 
 ; -- the ships
 turnRate  := 0.07.

@@ -52,9 +52,8 @@
 engine:open("asteroids", #640, #480).
 
 up := -1.5707963267948966.          ; a heading, since y runs down the screen
-rng := random:new.
 
-leftKeys := ["Left", "A"]. rightKeys := ["Right", "D"]. thrustKeys := ["Up", "W"].
+thrustKeys := ["Up", "W"].
 
 ; -- the ship
 turnRate  := 0.085.                  ; radians a frame

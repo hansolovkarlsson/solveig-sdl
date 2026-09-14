@@ -117,7 +117,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/spacewar.sol`](examples/spacewar.sol) | the fifth game: two ships, the star's gravity, torpedoes, fuel, hyperspace, the 1962 rules; the machine flies the wedge until `C` |
 | [`examples/lander.sol`](examples/lander.sol) | the sixth game: a throttle, a tank, gravity, a line terrain with three pads, a landing judged by speed and angle |
 | [`examples/tetris.sol`](examples/tetris.sol) | the seventh game: the well, seven pieces, the next one shown, levels by the lines, the 1989 rules; the tune |
-| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
+| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
@@ -292,8 +292,15 @@ lay, played 204 pieces to 68 lines and level 7, then played at random until
 the curtain; and directly, a vertical I into a four-row gap for 1,200. The
 copy found one thing in the game: a piece could not be turned where it
 enters, because the first `fits` refused a cell above the well, which the
-cartridge allows and does not draw. What the reading of seven says is for
-that reading.
+cartridge allows and does not draw. The reading of seven that followed
+moved the words into the engine by the two-game rule, as `font:word` beside
+`font:number`, with the whole alphabet rather than the sixteen letters the
+two games had used between them, which is the one place the engine was
+designed ahead and the file says so; and bound `rng` and the two key lists,
+which five games and three had each written in a line of their own. The
+tune and the repeat of a held key stay here: the repeat is a rule of one
+game written over an engine name, which is what `keys` keeping booleans was
+for, and not a seam.
 
 ## Reference
 

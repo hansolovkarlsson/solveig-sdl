@@ -25,6 +25,9 @@
 ; for the first time; that the first collision against a line rather than a
 ; radius is a few lines of the game; that the words are sprites, and so the
 ; font is the special case again; and that the binding is asked for nothing.
+; (The words are the engine's now: the reading of seven moved the alphabet
+; in beside the digits when Tetris wanted words too, and `font:word` paints
+; one. This file keeps the numbers it names and the bar for a minus.)
 ;
 ; The tones are pitches chosen for this file.
 
@@ -32,7 +35,6 @@
 
 engine:open("lander", #640, #480).
 
-rng := random:new.
 up := -1.5707963267948966.           ; nose up, since y runs down the screen
 
 ; -- the craft
@@ -68,34 +70,6 @@ i := #0. j := #0.
 bodyShape := [[0.6, 0.0], [0.3, 0.5], [-0.3, 0.5], [-0.6, 0.2], [-0.6, -0.2], [-0.3, -0.5], [0.3, -0.5]].
 legShapes := [[[-0.5, 0.4], [-1.0, 0.8]], [[-0.5, -0.4], [-1.0, -0.8]]].
 footShapes := [[[-1.0, 0.6], [-1.0, 1.0]], [[-1.0, -0.6], [-1.0, -1.0]]].
-
-; ---------------------------------------------------------------------------
-; Words, in the same cells as the digits. Only the letters the five words
-; use; a sixth word would add its letters here.
-
-letters := #[
-    "A" = ["###", "#.#", "###", "#.#", "#.#"],
-    "C" = ["###", "#..", "#..", "#..", "###"],
-    "E" = ["###", "#..", "##.", "#..", "###"],
-    "F" = ["###", "#..", "##.", "#..", "#.."],
-    "H" = ["#.#", "#.#", "###", "#.#", "#.#"],
-    "L" = ["#..", "#..", "#..", "#..", "###"],
-    "O" = ["###", "#.#", "#.#", "#.#", "###"],
-    "R" = ["###", "#.#", "##.", "#.#", "#.#"],
-    "S" = ["###", "#..", "###", "..#", "###"],
-    "T" = ["###", ".#.", ".#.", ".#.", ".#."],
-    "U" = ["#.#", "#.#", "#.#", "#.#", "###"],
-    "V" = ["#.#", "#.#", "#.#", "#.#", ".#."]].
-glyphs := dictionary:new.
-["A", "C", "E", "F", "H", "L", "O", "R", "S", "T", "U", "V"]:do({ ch |
-    glyphs:atPut(ch, sprite:make(letters:at(ch), font:cell)) }).
-
-; A word with its top-left at (left, top).
-label := { text, left, top | | k |
-    k := #1.
-    { k:lessOrEqual(text:size) }:whileTrue({
-        glyphs:at(text:at(k)):paint(@expr(left + (k - #1) * #4 * font:cell), top).
-        k := k:inc }) }.
 
 ; A signed number: the digits, and a bar for a minus, right-aligned at `right`.
 signed := { value, right, top |
@@ -278,12 +252,12 @@ makeTerrain:value. lander:enter.
     debris:do({ m | m:paint }).
 
     ; the numbers
-    label:value("SCORE", #16, #12). font:number(score, #200, #12).
-    label:value("FUEL", #16, #52).  font:number(lander:fuel:truncated, #200, #52).
-    label:value("ALT", #400, #12).
+    font:word("SCORE", #16, #12). font:number(score, #200, #12).
+    font:word("FUEL", #16, #52).  font:number(lander:fuel:truncated, #200, #52).
+    font:word("ALT", #400, #12).
     font:number(@expr(groundAt:value(lander:x:truncated) - lander:y:truncated - #10):abs, #600, #12).
-    label:value("HS", #400, #52).   signed:value(@expr(lander:vx * 10.0):truncated, #600, #52).
-    label:value("VS", #400, #92).   signed:value(@expr(lander:vy * 10.0):truncated, #600, #92).
+    font:word("HS", #400, #52).   signed:value(@expr(lander:vx * 10.0):truncated, #600, #52).
+    font:word("VS", #400, #92).   signed:value(@expr(lander:vy * 10.0):truncated, #600, #92).
 
     ; the throttle, as a bar up the left edge
     sdl:fill(screen, #16, @expr(#300 - #2 * lander:throttle), #8, @expr(#2 * lander:throttle)).

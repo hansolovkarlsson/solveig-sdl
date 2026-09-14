@@ -17,13 +17,18 @@
 ; was Spacewar!, the second drawn with lines, and the reading of five moved
 ; the whole of that layer in: `thing`, `draw` and `mote` as Asteroids had
 ; written them and Spacewar copied them, and `craft`, the seam between the
-; two games' ships.
+; two games' ships. The sixth was Lunar Lander, which asked for nothing and
+; was the first to want words; the seventh was Tetris, which wanted them
+; again, and the reading of seven moved the alphabet in beside the digits,
+; and bound the generator and the two key lists that five games and three
+; had each written in a line of their own.
 ;
 ;   engine    opens the window and binds `screen`, `width`, `height`,
 ;             `running` and `frames`; drains the queue, and shows a frame
 ;   keys      which keys are held, kept from the events, asked by name
 ;   sprite    rows of text compiled once to runs, painted with `fill`
-;   font      the 3x5 cell digits every score was drawn with, ten sprites
+;   font      the 3x5 cell digits every score was drawn with, ten sprites,
+;             and the alphabet two games wrote their words with
 ;   rect      an integer rectangle: overlap, edges, clamping, a fill, `alive`
 ;   mover     a float position and velocity, one move a frame, `alive`
 ;   ball      a mover with an integer shadow, `box`, which is a rect,
@@ -40,8 +45,8 @@
 ; games and as the README argues it should be. Nothing here calls back.
 ;
 ; **What an included file binds are ordinary globals**, so the twelve names
-; above and the seven the engine binds when it opens are the whole of what
-; this file takes from the namespace.
+; above, the seven the engine binds when it opens, `tau`, `rng` and the two
+; key lists are the whole of what this file takes from the namespace.
 
 ; ---------------------------------------------------------------------------
 ; The frame
@@ -54,6 +59,7 @@ screen := nil. width := #0. height := #0.
 running := false. frames := #0.
 fw := 0.0. fh := 0.0.                ; the width and height as floats
 tau := 6.283185307179586.            ; a whole turn, for the games in radians
+rng := random:new.                   ; the one generator; five games had made their own
 
 ; A window, and the globals filled in.
 engine:open := { title, w, h |
@@ -97,6 +103,10 @@ keys:down := { name | self:held:at(name, false) }.
 keys:any := { names |
     names:inject(false, { seen, name | seen:or({ self:down(name) }) }) }.
 
+; The two lists three games wrote the same way: the arrows, and the letters
+; a left hand rests on. A game with more keys names its own beside these.
+leftKeys := ["Left", "A"]. rightKeys := ["Right", "D"].
+
 ; ---------------------------------------------------------------------------
 ; A sprite: rows of text, `#` a cell and `.` a gap, compiled once to
 ; horizontal runs, so that painting it is one `sdl:fill` per run rather
@@ -139,7 +149,11 @@ sprite:paint := { px, py | | c |
 ; ---------------------------------------------------------------------------
 ; The digits, 3 wide and 5 high, ten sprites in order so that
 ; `digits:at(d:inc)` is the digit d. This is how the 1972 machine drew its
-; score, and four games have found it text enough. The cell is fixed when
+; score, and five games found it text enough. The letters are in the same
+; cells, and are the one place this file was designed ahead of the games:
+; Lander and Tetris had used sixteen between them, and the alphabet is
+; twenty-six, because the digits are all ten and a word with a letter the
+; font lacks would fail an eighth game at run time. The cell is fixed when
 ; the file is compiled in.
 
 font := object:new.
@@ -171,6 +185,45 @@ font:number := { value, right, top | | n, left, c |
         left := @expr(left - #4 * c).
         self:digit(n:mod(#10), left, top).
         n := n:div(#10) }) }.
+
+; The letters, upper case, as sprites by name.
+font:letters := #[
+    "A" = ["###", "#.#", "###", "#.#", "#.#"],
+    "B" = ["##.", "#.#", "##.", "#.#", "##."],
+    "C" = ["###", "#..", "#..", "#..", "###"],
+    "D" = ["##.", "#.#", "#.#", "#.#", "##."],
+    "E" = ["###", "#..", "##.", "#..", "###"],
+    "F" = ["###", "#..", "##.", "#..", "#.."],
+    "G" = ["###", "#..", "#.#", "#.#", "###"],
+    "H" = ["#.#", "#.#", "###", "#.#", "#.#"],
+    "I" = ["###", ".#.", ".#.", ".#.", "###"],
+    "J" = ["..#", "..#", "..#", "#.#", "###"],
+    "K" = ["#.#", "#.#", "##.", "#.#", "#.#"],
+    "L" = ["#..", "#..", "#..", "#..", "###"],
+    "M" = ["#.#", "###", "###", "#.#", "#.#"],
+    "N" = ["##.", "#.#", "#.#", "#.#", "#.#"],
+    "O" = ["###", "#.#", "#.#", "#.#", "###"],
+    "P" = ["###", "#.#", "###", "#..", "#.."],
+    "Q" = ["###", "#.#", "#.#", "###", "..#"],
+    "R" = ["###", "#.#", "##.", "#.#", "#.#"],
+    "S" = ["###", "#..", "###", "..#", "###"],
+    "T" = ["###", ".#.", ".#.", ".#.", ".#."],
+    "U" = ["#.#", "#.#", "#.#", "#.#", "###"],
+    "V" = ["#.#", "#.#", "#.#", "#.#", ".#."],
+    "W" = ["#.#", "#.#", "###", "###", "#.#"],
+    "X" = ["#.#", "#.#", ".#.", "#.#", "#.#"],
+    "Y" = ["#.#", "#.#", ".#.", ".#.", ".#."],
+    "Z" = ["###", "..#", ".#.", "#..", "###"]].
+font:glyphs := dictionary:new.
+font:letters:keysAndValuesDo({ ch, rows | font:glyphs:atPut(ch, sprite:make(rows, font:cell)) }).
+
+; A word, upper case, with its top-left at (left, top), in the current
+; colour; a letter the font lacks is an error, since there are none.
+font:word := { text, left, top | | k |
+    k := #1.
+    { k:lessOrEqual(text:size) }:whileTrue({
+        self:glyphs:at(text:at(k)):paint(@expr(left + (k - #1) * #4 * self:cell), top).
+        k := k:inc }) }.
 
 ; ---------------------------------------------------------------------------
 ; A rectangle, in pixels. Paddles and bricks are rects; a ball's shadow is
@@ -309,11 +362,10 @@ craft:paint := { shape, scale, burning |
 
 mote := thing:new.
 mote:life := #0. mote:angle := 0.0. mote:long := false.
-mote:rng := random:new.
 mote:make := { px, py, long, life | | m |
     m := self:new. m:x := px. m:y := py. m:long := long. m:life := life.
-    m:angle := @expr(mote:rng:fraction * tau).
-    m:aim(@expr(mote:rng:fraction * tau), @expr(0.5 + mote:rng:fraction * 1.5)).
+    m:angle := @expr(rng:fraction * tau).
+    m:aim(@expr(rng:fraction * tau), @expr(0.5 + rng:fraction * 1.5)).
     m }.
 mote:step := { self:via(thing):step. self:life := self:life:dec.
     self:life:equals(#0):ifTrue({ self:alive := false }) }.
