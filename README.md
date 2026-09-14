@@ -96,7 +96,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The five examples
+## The five examples, and the engine under two of them
 
 | | |
 | --- | --- |
@@ -105,6 +105,8 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/mandelbrot.sol`](examples/mandelbrot.sol) | an explorer — click to zoom in, right-click out, `r` to reset, Escape to quit |
 | [`examples/pong.sol`](examples/pong.sol) | the game: `W`/`S` and `Up`/`Down`, `C` hands a paddle to the machine, Space serves, first to eleven |
 | [`examples/breakout.sol`](examples/breakout.sol) | the second game: `Left`/`Right` or the mouse, Space serves, three balls, the 1976 rules |
+| [`examples/engine.sol`](examples/engine.sol) | what the two games had in common: the frame, held keys, the font, a rect, a ball, a tone |
+| [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
 ../Solveig/bin/solas examples/mandelbrot.sol -o examples/mandelbrot.sob
@@ -161,18 +163,30 @@ first time. The machine plays the right paddle until `C` hands it over, and it
 follows the ball a little slower than the ball can be made to go, which is
 what makes it beatable.
 
-**`breakout.sol` is the second game, and it added nothing.** Not to `sdl.c`,
-and not to a shared file either: the frame loop, the drained queue, the held
-keys, the 3×5 font, the beep and the float-to-integer line are written out
-again in the same shape, deliberately, because the engine is *what is left
-after the second game* and the way to read that off is two whole games side
-by side rather than one game and a library extracted from a sample of one.
-What the file has that Pong did not need is a hundred and twelve things of one
-kind: a brick is an object delegating to one prototype, the wall is a `do`
-that paints and a `do` that collides, and that is the whole of the new part.
-The rules are the 1976 machine's: four speed-ups, a paddle halved by the top
-wall, a second wall once. Nothing plays it for you; a self-playing copy was
-used to check the physics and thrown away.
+**`breakout.sol` is the second game, and it added nothing to `sdl.c`.** The
+1976 rules over the same twelve messages: four speed-ups, a paddle halved by
+the top wall, a second wall once. It was first written whole, sharing nothing
+with Pong on purpose, because the engine was defined as *what is left after the
+second game* and the way to read that off is two whole games side by side
+rather than one game and a library extracted from a sample of one. Nothing
+plays it for you; a self-playing copy was used to check the physics and thrown
+away.
+
+**`engine.sol` and `kit.sol` are what was left.** Read against each other, the
+two games shared five things and a tone, none of them C: the frame (open a
+window, drain the queue, show a frame, and the loop stays the program's own),
+held keys as a fact the program keeps, the 3×5 cell font both scores were drawn
+with, a rectangle with the overlap test that had been written four times, and a
+ball whose float position has an integer shadow crossed in one place. That is
+`engine.sol`, about a hundred lines of code. What Pong and Breakout share that
+Asteroids would not want, a wall bounce and the paddle-angle formula, is
+`kit.sol` beside it and not the bottom of it. Both games were then rewritten
+over the two files and lost a hundred lines each, 290 to 184 and 339 to 232;
+the engine and kit are 238 lines with their headers, so the whole is a few
+lines longer than the two games were and every line of it is written once.
+Nothing here draws a sprite, mixes a sample or owns a scene, because neither
+game asked, and the rule at the end of this file applies at the engine's
+boundary too.
 
 ## Reference
 
