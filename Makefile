@@ -12,6 +12,7 @@
 #   make spacewar       build it and play the fifth
 #   make lander         build it and play the sixth
 #   make tetris         build it and play the seventh
+#   make missile        build it and play the eighth
 #   make test           compile every example, which is the check that nothing
 #                       next door has broken one
 #   make clean
@@ -66,7 +67,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander tetris test clean check
+.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander tetris missile test clean check
 
 all: $(TARGET)
 
@@ -139,6 +140,10 @@ lander: all
 # The seventh game, the first drawn from a grid, and the second with words.
 tetris: all
 	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/tetris.sol
+
+# The eighth game, the first aimed with the mouse, and the first with a title.
+missile: all
+	$(SOLVEIG)/bin/solis --expr --extension=$(TARGET) examples/missile.sol
 
 # Every example compiled, and not run, since a run wants a window. This is
 # the check that a library retired in Solveig has not broken a file here that

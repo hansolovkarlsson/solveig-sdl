@@ -218,11 +218,14 @@ font:glyphs := dictionary:new.
 font:letters:keysAndValuesDo({ ch, rows | font:glyphs:atPut(ch, sprite:make(rows, font:cell)) }).
 
 ; A word, upper case, with its top-left at (left, top), in the current
-; colour; a letter the font lacks is an error, since there are none.
+; colour; a space is a cell left empty, which the eighth game asked for
+; with its first title, and a letter the font lacks is an error, since
+; there are none.
 font:word := { text, left, top | | k |
     k := #1.
     { k:lessOrEqual(text:size) }:whileTrue({
-        self:glyphs:at(text:at(k)):paint(@expr(left + (k - #1) * #4 * self:cell), top).
+        text:at(k):equals(" "):ifFalse({
+            self:glyphs:at(text:at(k)):paint(@expr(left + (k - #1) * #4 * self:cell), top) }).
         k := k:inc }) }.
 
 ; ---------------------------------------------------------------------------

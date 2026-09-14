@@ -103,7 +103,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The ten examples, and the engine under seven of them
+## The eleven examples, and the engine under eight of them
 
 | | |
 | --- | --- |
@@ -117,6 +117,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/spacewar.sol`](examples/spacewar.sol) | the fifth game: two ships, the star's gravity, torpedoes, fuel, hyperspace, the 1962 rules; the machine flies the wedge until `C` |
 | [`examples/lander.sol`](examples/lander.sol) | the sixth game: a throttle, a tank, gravity, a line terrain with three pads, a landing judged by speed and angle |
 | [`examples/tetris.sol`](examples/tetris.sol) | the seventh game: the well, seven pieces, the next one shown, levels by the lines, the 1989 rules; the tune |
+| [`examples/missile.sol`](examples/missile.sol) | the eighth game: the mouse and three buttons, six cities and three bases, missiles that split, bombers, smart bombs, the count, the 1980 rules |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -301,6 +302,31 @@ which five games and three had each written in a line of their own. The
 tune and the repeat of a held key stay here: the repeat is a rule of one
 game written over an engine name, which is what `keys` keeping booleans was
 for, and not a seam.
+
+**`missile.sol` is the eighth game, the first aimed with the mouse, and the
+first with a title.** The 1980 rules: six cities and three bases, ten
+missiles a base a wave with the middle base's the faster, incoming missiles
+as lines that split on the way, a bomber or satellite from the second wave
+and a smart bomb from the fifth that slides round a disc unless it is boxed
+in, a shot that flies to the crosshair and explodes into a disc that grows
+and shrinks and takes whatever it reaches, which explodes in turn; 25, 100
+and 125 times a multiplier that steps by pairs of waves, the count at the
+end of a wave with its tick, a bonus city every 10,000 rebuilt at the
+count, and THE END. The header predicted that `keys` would carry nothing
+for the first time, every input being an event and the crosshair the
+pointer kept from `'mouseMove` as Breakout kept its paddle; that everything
+in the air would delegate to `mover` itself, the first game to want neither
+`ball` nor `thing`; that `sprite` would carry a third game; that
+`font:word` would get its third customer and its first title, in cells
+three times the size from the engine's own rows; that the disc is
+`circles.sol`'s, copied since that file is not a game; and that the binding
+would be asked for nothing. It was not, but the engine was, once, the first
+time in eight games: BONUS POINTS has a space, and the alphabet had no gap,
+so `font:word` steps over one now. Checked by a self-playing copy under the
+dummy drivers that led each shot by its flight time and marked what it had
+fired at, which held six cities for seven waves and reached the bonus city
+twice; and directly, a smart bomb dodging a disc and dying inside one. What
+the reading of eight says is for that reading.
 
 ## Reference
 
