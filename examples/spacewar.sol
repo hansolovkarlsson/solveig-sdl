@@ -24,6 +24,9 @@
 ; with a radius that wraps and a shape as unit points drawn as lines, and
 ; are copied in rather than shared, so that the reading of five can move
 ; them by the two-game rule rather than this file reaching into another.
+; (It did: they are the engine's now, with `mote` and with `craft`, which
+; is what this file's ship and Asteroids' had in common. This file keeps
+; the star, the pull, the torpedo, the two ships' rules and the pilot.)
 ; That gravity is a force and the first one, a few lines on the thing;
 ; that the two bars are `fill`s and the star is four lines; and that the
 ; binding is asked for nothing, again.
@@ -34,8 +37,6 @@
 
 engine:open("spacewar", #640, #480).
 
-fw := width:asFloat. fh := height:asFloat.
-tau := 6.283185307179586.
 rng := random:new.
 
 ; -- the ships
@@ -74,42 +75,8 @@ leftScore := #0. rightScore := #0.
 
 needleShape := [[1.0, 0.0], [-0.2, 0.25], [-1.0, 0.15], [-1.0, -0.15], [-0.2, -0.25]].
 wedgeShape  := [[1.0, 0.0], [-0.8, 0.7], [-0.4, 0.0], [-0.8, -0.7]].
-flameShape  := [[-0.5, 0.3], [-1.1, 0.0], [-0.5, -0.3]].
-
-; A shape at (ox, oy), turned by `angle` and scaled, as lines. The last
-; point joins the first.
-draw := { shape, ox, oy, angle, scale | | c, s, n, j, p, lx, ly, px, py |
-    c := angle:cos. s := angle:sin.
-    n := shape:size.
-    p := shape:at(n).
-    lx := @expr(ox + (p:at(#1) * c - p:at(#2) * s) * scale):truncated.
-    ly := @expr(oy + (p:at(#1) * s + p:at(#2) * c) * scale):truncated.
-    j := #1.
-    { j:lessOrEqual(n) }:whileTrue({
-        p := shape:at(j).
-        px := @expr(ox + (p:at(#1) * c - p:at(#2) * s) * scale):truncated.
-        py := @expr(oy + (p:at(#1) * s + p:at(#2) * c) * scale):truncated.
-        sdl:line(screen, lx, ly, px, py).
-        lx := px. ly := py.
-        j := j:inc }) }.
 
 ; ---------------------------------------------------------------------------
-; A thing that moves: a mover with a radius, and the wrap. As Asteroids
-; wrote it, with one thing more: the star's pull.
-
-thing := mover:new.
-thing:r := 1.0.
-thing:step := { self:move. self:wrap }.
-thing:wrap := {
-    self:x:lessThan(@expr(-self:r)):ifTrue({ self:x := @expr(self:x + fw + 2.0 * self:r) }).
-    self:x:greaterThan(@expr(fw + self:r)):ifTrue({ self:x := @expr(self:x - fw - 2.0 * self:r) }).
-    self:y:lessThan(@expr(-self:r)):ifTrue({ self:y := @expr(self:y + fh + 2.0 * self:r) }).
-    self:y:greaterThan(@expr(fh + self:r)):ifTrue({ self:y := @expr(self:y - fh - 2.0 * self:r) }) }.
-thing:within := { other, reach | | dx, dy |
-    dx := @expr(self:x - other:x). dy := @expr(self:y - other:y).
-    @expr(dx * dx + dy * dy < reach * reach) }.
-thing:touches := { other | self:within(other, @expr(self:r + other:r)) }.
-
 ; The star is a thing that does not move, so that `within` and `touches`
 ; work against it.
 star := thing:new.
@@ -117,7 +84,8 @@ star:x := @expr(fw / 2.0). star:y := @expr(fh / 2.0). star:r := starRadius.
 
 ; Gravity: toward the star, as one over the square of the distance, capped
 ; close in so that a near miss is a slingshot rather than an explosion of
-; arithmetic.
+; arithmetic. A method on the engine's `thing`, added here, which claims no
+; name; it is this game's until a second game has a force.
 thing:pull := { | dx, dy, d, a |
     dx := @expr(star:x - self:x). dy := @expr(star:y - self:y).
     d := @expr(sqrt(dx * dx + dy * dy)).
@@ -139,27 +107,12 @@ torp:step := { self:via(thing):step. self:life := self:life:dec.
     self:life:equals(#0):ifTrue({ self:alive := false }) }.
 torp:paint := { sdl:fill(screen, self:x:truncated, self:y:truncated, #2, #2) }.
 
-; -- debris: a short line drifting out for a while
-mote := thing:new.
-mote:life := #0. mote:angle := 0.0.
-mote:make := { px, py | | m |
-    m := self:new. m:x := px. m:y := py. m:life := #60.
-    m:angle := @expr(rng:fraction * tau).
-    m:aim(@expr(rng:fraction * tau), @expr(0.5 + rng:fraction * 1.5)).
-    m }.
-mote:step := { self:via(thing):step. self:life := self:life:dec.
-    self:life:equals(#0):ifTrue({ self:alive := false }) }.
-mote:paint := {
-    sdl:line(screen, self:x:truncated, self:y:truncated,
-             @expr(self:x + self:angle:cos * 6.0):truncated,
-             @expr(self:y + self:angle:sin * 6.0):truncated) }.
-
 ; ---------------------------------------------------------------------------
-; A ship: a thing with a heading, a tank, a rack of torpedoes, a set of
-; keys, and a mode. Two of them, and they are reset rather than remade.
+; A ship: a craft with a tank, a rack of torpedoes, a set of keys, and a
+; mode. Two of them, and they are reset rather than remade.
 
-ship := thing:new.
-ship:shape := nil. ship:heading := 0.0. ship:mode := 'dead.     ; 'alive 'hyper 'dead
+ship := craft:new.
+ship:shape := nil. ship:mode := 'dead.                          ; 'alive 'hyper 'dead
 ship:fuel := #0. ship:rack := #0. ship:fireIn := #0.
 ship:hyperIn := #0. ship:hyperUses := #0.
 ship:leftKey := "". ship:rightKey := "". ship:thrustKey := "".
@@ -176,14 +129,10 @@ ship:reset := {
     self:fuel := fuelFull. self:rack := torpsFull.
     self:fireIn := #0. self:hyperIn := #0. self:hyperUses := #0.
     self:mode := 'alive }.
-ship:turn := { by | self:heading := @expr(self:heading + by) }.
 ship:thrust := {
     self:fuel:greaterThan(#0):ifTrue({
         self:fuel := self:fuel:dec. self:thrusting := true.
-        self:vx := @expr(self:vx + self:heading:cos * thrustAt).
-        self:vy := @expr(self:vy + self:heading:sin * thrustAt).
-        @expr(self:vx * self:vx + self:vy * self:vy > topSpeed * topSpeed):ifTrue({
-            self:aim(float:atan2(self:vy, self:vx), topSpeed) }).
+        self:burn(thrustAt, topSpeed).
         thrustTone:hum }) }.
 ship:fire := {
     self:mode:equals('alive):and({ self:rack:greaterThan(#0) }):and({
@@ -199,12 +148,9 @@ ship:hyperspace := {
 ship:die := {
     self:mode := 'dead.
     i := #0.
-    { i:lessThan(#10) }:whileTrue({ debris:add(mote:make(self:x, self:y)). i := i:inc }).
+    { i:lessThan(#10) }:whileTrue({ debris:add(mote:make(self:x, self:y, true, #60)). i := i:inc }).
     bangTone:play }.
-ship:paint := {
-    draw:value(self:shape, self:x, self:y, self:heading, 12.0).
-    self:thrusting:and({ frames:mod(#2):equals(#0) }):ifTrue({
-        draw:value(flameShape, self:x, self:y, self:heading, 12.0) }) }.
+ship:paint := { self:via(craft):paint(self:shape, 12.0, self:thrusting) }.
 
 ; One frame of a ship: the keys, the pull, the move, and the timers.
 ship:fly := {

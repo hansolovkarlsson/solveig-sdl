@@ -108,7 +108,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/asteroids.sol`](examples/asteroids.sol) | the third game: turn, thrust, fire, hyperspace; rocks that split, both saucers, the 1979 rules |
 | [`examples/invaders.sol`](examples/invaders.sol) | the fourth game: fifty-five invaders, four bunkers that erode, the mystery ship, the 1978 rules |
 | [`examples/spacewar.sol`](examples/spacewar.sol) | the fifth game: two ships, the star's gravity, torpedoes, fuel, hyperspace, the 1962 rules; the machine flies the wedge until `C` |
-| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover and a ball, a tone and its channel |
+| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
@@ -237,8 +237,11 @@ and otherwise hunts and fires; it never uses hyperspace. The header predicted
 that `thing` and `draw` would be wanted exactly as Asteroids wrote them, and
 they are copied in rather than shared so that the reading of five can move
 them by the two-game rule; that gravity would be a few lines on the thing,
-and the first force; and that the binding would be asked for nothing. What
-the reading found is for that reading.
+and the first force; and that the binding would be asked for nothing. The
+reading of five that followed moved the whole layer in: `thing`, `draw` and
+`mote` as Asteroids wrote them, and `craft`, the seam between the two games'
+ships, a thing with a heading that turns, burns to a ceiling and is painted
+with a flame. Gravity, hyperspace's two rules, and the pilot stay here.
 
 ## Reference
 

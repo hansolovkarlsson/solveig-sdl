@@ -25,8 +25,11 @@
 ; integer shadow is not a box but a radius, and Asteroids wraps where Pong
 ; bounced. So this file would define its own moving thing, and whether
 ; `ball` is that thing's special case is a question for the reading after,
-; not for this file. (The reading found neither is the other's case: both
-; are a `mover`, four slots and two lines, and `thing` delegates to it now.) Of the binding's twelve messages it would ask for
+; not for this file. (The reading of three found neither is the other's
+; case: both are a `mover`. The reading of five, after Spacewar! wanted the
+; same `thing`, `draw` and `mote`, moved all three into the engine, with
+; `craft` for what the two games' ships shared; this file keeps the rock,
+; the shot, the saucer and the rules.) Of the binding's twelve messages it would ask for
 ; nothing: `sdl:line` is the whole of the vector display, the trigonometry
 ; is the machine's, and the continuous sounds, thrust and siren and the
 ; heartbeat, would be `sdl:beep` re-issued from the frame, since a beep
@@ -48,8 +51,6 @@
 
 engine:open("asteroids", #640, #480).
 
-fw := width:asFloat. fh := height:asFloat.
-tau := 6.283185307179586.
 up := -1.5707963267948966.          ; a heading, since y runs down the screen
 rng := random:new.
 
@@ -97,7 +98,6 @@ born := []. i := #0. k := nil.
 ; The shapes, as unit points drawn in order and closed.
 
 shipShape  := [[1.0, 0.0], [-0.7, 0.6], [-0.4, 0.0], [-0.7, -0.6]].
-flameShape := [[-0.4, 0.3], [-1.0, 0.0], [-0.4, -0.3]].
 hullShape  := [[1.0, 0.0], [0.5, 0.4], [-0.5, 0.4], [-1.0, 0.0], [-0.5, -0.4], [0.5, -0.4]].
 domeShape  := [[0.3, -0.4], [0.2, -0.8], [-0.2, -0.8], [-0.3, -0.4]].
 rockShapes := [
@@ -109,42 +109,6 @@ rockShapes := [
      [-0.6, -0.4], [-0.9, -0.8], [-0.2, -1.0], [0.5, -0.6]],
     [[0.8, 0.6], [0.2, 0.9], [-0.4, 1.0], [-0.9, 0.5], [-0.7, -0.1],
      [-1.0, -0.6], [-0.3, -1.0], [0.4, -0.7], [1.0, -0.3]]].
-
-; A shape at (ox, oy), turned by `angle` and scaled, as lines. The last
-; point joins the first.
-draw := { shape, ox, oy, angle, scale | | c, s, n, j, p, lx, ly, px, py |
-    c := angle:cos. s := angle:sin.
-    n := shape:size.
-    p := shape:at(n).
-    lx := @expr(ox + (p:at(#1) * c - p:at(#2) * s) * scale):truncated.
-    ly := @expr(oy + (p:at(#1) * s + p:at(#2) * c) * scale):truncated.
-    j := #1.
-    { j:lessOrEqual(n) }:whileTrue({
-        p := shape:at(j).
-        px := @expr(ox + (p:at(#1) * c - p:at(#2) * s) * scale):truncated.
-        py := @expr(oy + (p:at(#1) * s + p:at(#2) * c) * scale):truncated.
-        sdl:line(screen, lx, ly, px, py).
-        lx := px. ly := py.
-        j := j:inc }) }.
-
-; ---------------------------------------------------------------------------
-; A thing that moves: a mover with a radius, and the wrap. Not a `ball`,
-; because its shadow is a radius and not a box, and nothing here bounces;
-; what the two have in common is the mover under both. Everything on the
-; screen delegates to it.
-
-thing := mover:new.
-thing:r := 1.0.
-thing:step := { self:move. self:wrap }.
-thing:wrap := {
-    self:x:lessThan(@expr(-self:r)):ifTrue({ self:x := @expr(self:x + fw + 2.0 * self:r) }).
-    self:x:greaterThan(@expr(fw + self:r)):ifTrue({ self:x := @expr(self:x - fw - 2.0 * self:r) }).
-    self:y:lessThan(@expr(-self:r)):ifTrue({ self:y := @expr(self:y + fh + 2.0 * self:r) }).
-    self:y:greaterThan(@expr(fh + self:r)):ifTrue({ self:y := @expr(self:y - fh - 2.0 * self:r) }) }.
-thing:within := { other, reach | | dx, dy |
-    dx := @expr(self:x - other:x). dy := @expr(self:y - other:y).
-    @expr(dx * dx + dy * dy < reach * reach) }.
-thing:touches := { other | self:within(other, @expr(self:r + other:r)) }.
 
 ; -- a rock
 rock := thing:new.
@@ -168,28 +132,22 @@ shot:step := { self:via(thing):step. self:life := self:life:dec.
     self:life:equals(#0):ifTrue({ self:alive := false }) }.
 shot:paint := { sdl:fill(screen, self:x:truncated, self:y:truncated, #2, #2) }.
 
-; -- the ship. One of them; it is reset rather than remade.
-ship := thing:new.
+; -- the ship: a craft with drag. One of them; it is reset rather than remade.
+ship := craft:new.
 ship:r := 10.0. ship:heading := up. ship:mode := 'dead.      ; 'alive 'dead 'hyper
 ship:reset := {
     self:x := @expr(fw / 2.0). self:y := @expr(fh / 2.0).
     self:vx := 0.0. self:vy := 0.0. self:heading := up.
     self:mode := 'alive }.
-ship:thrust := {
-    self:vx := @expr(self:vx + self:heading:cos * thrustAt).
-    self:vy := @expr(self:vy + self:heading:sin * thrustAt).
-    @expr(self:vx * self:vx + self:vy * self:vy > topSpeed * topSpeed):ifTrue({
-        self:aim(float:atan2(self:vy, self:vx), topSpeed) }) }.
+ship:thrust := { self:burn(thrustAt, topSpeed) }.
 ship:coast := { self:vx := @expr(self:vx * drag). self:vy := @expr(self:vy * drag) }.
-ship:paint := { flame |
-    draw:value(shipShape, self:x, self:y, self:heading, 12.0).
-    flame:ifTrue({ draw:value(flameShape, self:x, self:y, self:heading, 12.0) }) }.
 
-; -- a saucer. Crosses the screen, wrapping in y only, and leaves at the
-; far side; changes its mind about up and down now and then; fires.
-craft := thing:new.
-craft:small := false. craft:fireIn := #0. craft:turnIn := #0. craft:dir := 1.0.
-craft:make := { small | | c |
+; -- a saucer, a thing and not a craft, since it has no heading. Crosses the
+; screen, wrapping in y only, and leaves at the far side; changes its mind
+; about up and down now and then; fires.
+ufo := thing:new.
+ufo:small := false. ufo:fireIn := #0. ufo:turnIn := #0. ufo:dir := 1.0.
+ufo:make := { small | | c |
     c := self:new.
     c:small := small.
     c:r := small:ifElse({ 6.0 }, { 12.0 }).
@@ -199,12 +157,12 @@ craft:make := { small | | c |
     c:vx := @expr(c:dir * 1.5). c:vy := 0.0.
     c:fireIn := #60. c:turnIn := #90.
     c }.
-craft:wrap := {
+ufo:wrap := {
     self:y:lessThan(@expr(-self:r)):ifTrue({ self:y := @expr(self:y + fh + 2.0 * self:r) }).
     self:y:greaterThan(@expr(fh + self:r)):ifTrue({ self:y := @expr(self:y - fh - 2.0 * self:r) }).
     self:dir:greaterThan(0.0):and({ self:x:greaterThan(@expr(fw + self:r)) }):ifTrue({ self:alive := false }).
     self:dir:lessThan(0.0):and({ self:x:lessThan(@expr(-self:r)) }):ifTrue({ self:alive := false }) }.
-craft:step := {
+ufo:step := {
     self:via(thing):step.
     self:turnIn := self:turnIn:dec.
     self:turnIn:equals(#0):ifTrue({
@@ -212,36 +170,19 @@ craft:step := {
         self:vy := [-1.0, 0.0, 1.0]:at(rng:upTo(#3)) }).
     self:fireIn := self:fireIn:dec.
     self:fireIn:equals(#0):ifTrue({ self:fireIn := #60. self:fire }) }.
-craft:fire := { | angle |
+ufo:fire := { | angle |
     self:small:and({ ship:mode:equals('alive) }):ifElse(
         { angle := @expr(float:atan2(ship:y - self:y, ship:x - self:x)
                          + (rng:fraction - 0.5) * 2.0 * saucerAim) },
         { angle := @expr(rng:fraction * tau) }).
     saucerShots:add(shot:make(self:x, self:y, angle, 6.0)).
     fireTone:play }.
-craft:paint := { | s |
+ufo:paint := { | s |
     s := self:r.
     draw:value(hullShape, self:x, self:y, 0.0, s).
     draw:value(domeShape, self:x, self:y, 0.0, s).
     sdl:line(screen, @expr(self:x - s):truncated, self:y:truncated,
                      @expr(self:x + s):truncated, self:y:truncated) }.
-
-; -- debris: a dot or a short line, drifting out for a while
-mote := thing:new.
-mote:life := #0. mote:angle := 0.0. mote:long := false.
-mote:make := { px, py, long, life | | m |
-    m := self:new. m:x := px. m:y := py. m:long := long. m:life := life.
-    m:angle := @expr(rng:fraction * tau).
-    m:aim(@expr(rng:fraction * tau), @expr(0.5 + rng:fraction * 1.5)).
-    m }.
-mote:step := { self:via(thing):step. self:life := self:life:dec.
-    self:life:equals(#0):ifTrue({ self:alive := false }) }.
-mote:paint := {
-    self:long:ifElse(
-        { sdl:line(screen, self:x:truncated, self:y:truncated,
-                   @expr(self:x + self:angle:cos * 8.0):truncated,
-                   @expr(self:y + self:angle:sin * 8.0):truncated) },
-        { sdl:fill(screen, self:x:truncated, self:y:truncated, #2, #2) }) }.
 
 ; ---------------------------------------------------------------------------
 ; What happens to things
@@ -335,8 +276,8 @@ spawnWave:value.                     ; something to look at before a game
 
     ; -- the ship
     ship:mode:equals('alive):ifTrue({
-        keys:any(leftKeys):ifTrue({ ship:heading := @expr(ship:heading - turnRate) }).
-        keys:any(rightKeys):ifTrue({ ship:heading := @expr(ship:heading + turnRate) }).
+        keys:any(leftKeys):ifTrue({ ship:turn(turnRate:negated) }).
+        keys:any(rightKeys):ifTrue({ ship:turn(turnRate) }).
         keys:any(thrustKeys):ifTrue({ ship:thrust. thrustTone:hum }).
         ship:coast.
         ship:step }).
@@ -397,7 +338,7 @@ spawnWave:value.                     ; something to look at before a game
         saucer:isNil:ifTrue({
             saucerIn := saucerIn:dec.
             saucerIn:equals(#0):ifTrue({
-                saucer := craft:make(score:greaterOrEqual(#10000):and({ rng:upTo(#5):greaterThan(#1) })) }) }).
+                saucer := ufo:make(score:greaterOrEqual(#10000):and({ rng:upTo(#5):greaterThan(#1) })) }) }).
 
         ; the heartbeat, quicker as the rocks go
         heartIn := heartIn:dec.
@@ -418,8 +359,7 @@ spawnWave:value.                     ; something to look at before a game
     saucerShots:do({ s | s:paint }).
     debris:do({ m | m:paint }).
     saucer:notNil:ifTrue({ saucer:paint }).
-    ship:mode:equals('alive):ifTrue({
-        ship:paint(keys:any(thrustKeys):and({ frames:mod(#2):equals(#0) })) }).
+    ship:mode:equals('alive):ifTrue({ ship:paint(shipShape, 12.0, keys:any(thrustKeys)) }).
     state:equals('attract):ifFalse({
         font:number(score, #100, #14).
         i := #0.

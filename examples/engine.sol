@@ -13,7 +13,11 @@
 ; a seam inside the fifth thing, which is `mover` now. The fourth was
 ; Invaders, which asked for nothing either, and the reading of four moved
 ; three things in: the sprite, which the font had been all along; `alive`
-; on a rect; and `hum`, which two games had written the same way.
+; on a rect; and `hum`, which two games had written the same way. The fifth
+; was Spacewar!, the second drawn with lines, and the reading of five moved
+; the whole of that layer in: `thing`, `draw` and `mote` as Asteroids had
+; written them and Spacewar copied them, and `craft`, the seam between the
+; two games' ships.
 ;
 ;   engine    opens the window and binds `screen`, `width`, `height`,
 ;             `running` and `frames`; drains the queue, and shows a frame
@@ -24,6 +28,10 @@
 ;   mover     a float position and velocity, one move a frame, `alive`
 ;   ball      a mover with an integer shadow, `box`, which is a rect,
 ;             crossed once a frame by `settle`
+;   thing     a mover with a radius, that wraps; collision is a distance
+;   draw      a shape, as unit points, drawn as lines turned and scaled
+;   craft     a thing with a heading: turns, burns to a ceiling, a flame
+;   mote      debris, a dot or a line, from a point for a while
 ;   tone      a pitch and a length, played by `sdl:beep`; `hum` for a sound
 ;             that is continuous, since the channel is one
 ;
@@ -31,8 +39,8 @@
 ; event on; the `whileTrue` around it is the program's own, as it was in both
 ; games and as the README argues it should be. Nothing here calls back.
 ;
-; **What an included file binds are ordinary globals**, so the eight names
-; above and the five the engine binds when it opens are the whole of what
+; **What an included file binds are ordinary globals**, so the twelve names
+; above and the seven the engine binds when it opens are the whole of what
 ; this file takes from the namespace.
 
 ; ---------------------------------------------------------------------------
@@ -44,11 +52,13 @@ engine := object:new.
 ; first assignment inside a block does not bind a global, and `open` is one.
 screen := nil. width := #0. height := #0.
 running := false. frames := #0.
+fw := 0.0. fh := 0.0.                ; the width and height as floats
+tau := 6.283185307179586.            ; a whole turn, for the games in radians
 
-; A window, and the five globals filled in.
+; A window, and the globals filled in.
 engine:open := { title, w, h |
     sdl:start.
-    width := w. height := h.
+    width := w. height := h. fw := w:asFloat. fh := h:asFloat.
     screen := sdl:window(title, w, h).
     running := true. frames := #0 }.
 
@@ -234,6 +244,85 @@ ball:putX := { at | self:x := at:asFloat. self:settle }.
 ball:putY := { at | self:y := at:asFloat. self:settle }.
 
 ball:paint := { self:box:paint }.
+
+; ---------------------------------------------------------------------------
+; A thing: a mover with a radius, that wraps. The other shape of motion,
+; Asteroids' and Spacewar's; collisions are a distance against two radii.
+
+thing := mover:new.
+thing:r := 1.0.
+thing:step := { self:move. self:wrap }.
+thing:wrap := {
+    self:x:lessThan(@expr(-self:r)):ifTrue({ self:x := @expr(self:x + fw + 2.0 * self:r) }).
+    self:x:greaterThan(@expr(fw + self:r)):ifTrue({ self:x := @expr(self:x - fw - 2.0 * self:r) }).
+    self:y:lessThan(@expr(-self:r)):ifTrue({ self:y := @expr(self:y + fh + 2.0 * self:r) }).
+    self:y:greaterThan(@expr(fh + self:r)):ifTrue({ self:y := @expr(self:y - fh - 2.0 * self:r) }) }.
+thing:within := { other, reach | | dx, dy |
+    dx := @expr(self:x - other:x). dy := @expr(self:y - other:y).
+    @expr(dx * dx + dy * dy < reach * reach) }.
+thing:touches := { other | self:within(other, @expr(self:r + other:r)) }.
+
+; ---------------------------------------------------------------------------
+; A shape at (ox, oy), turned by `angle` and scaled, as lines; the last
+; point joins the first. A shape is a list of unit points, so a rock is a
+; list and a ship is a list, and the vector display is this one block.
+
+draw := { shape, ox, oy, angle, scale | | c, s, n, j, p, lx, ly, px, py |
+    c := angle:cos. s := angle:sin.
+    n := shape:size.
+    p := shape:at(n).
+    lx := @expr(ox + (p:at(#1) * c - p:at(#2) * s) * scale):truncated.
+    ly := @expr(oy + (p:at(#1) * s + p:at(#2) * c) * scale):truncated.
+    j := #1.
+    { j:lessOrEqual(n) }:whileTrue({
+        p := shape:at(j).
+        px := @expr(ox + (p:at(#1) * c - p:at(#2) * s) * scale):truncated.
+        py := @expr(oy + (p:at(#1) * s + p:at(#2) * c) * scale):truncated.
+        sdl:line(screen, lx, ly, px, py).
+        lx := px. ly := py.
+        j := j:inc }) }.
+
+; ---------------------------------------------------------------------------
+; A craft: a thing with a heading, that turns, burns along its heading up
+; to a ceiling, and is painted as a shape with a flame behind it on the
+; frames it is burning. What Asteroids' ship and Spacewar's ships had in
+; common; what they carry, drag or a tank, and what hyperspace costs them,
+; is theirs.
+
+craft := thing:new.
+craft:heading := 0.0.
+craft:flame := [[-0.4, 0.3], [-1.0, 0.0], [-0.4, -0.3]].
+craft:turn := { by | self:heading := @expr(self:heading + by) }.
+craft:burn := { accel, top |
+    self:vx := @expr(self:vx + self:heading:cos * accel).
+    self:vy := @expr(self:vy + self:heading:sin * accel).
+    @expr(self:vx * self:vx + self:vy * self:vy > top * top):ifTrue({
+        self:aim(float:atan2(self:vy, self:vx), top) }) }.
+craft:paint := { shape, scale, burning |
+    draw:value(shape, self:x, self:y, self:heading, scale).
+    burning:and({ frames:mod(#2):equals(#0) }):ifTrue({
+        draw:value(self:flame, self:x, self:y, self:heading, scale) }) }.
+
+; ---------------------------------------------------------------------------
+; Debris: a dot or a short line, from a point in a random direction, for a
+; while. What an explosion is in a game drawn with lines.
+
+mote := thing:new.
+mote:life := #0. mote:angle := 0.0. mote:long := false.
+mote:rng := random:new.
+mote:make := { px, py, long, life | | m |
+    m := self:new. m:x := px. m:y := py. m:long := long. m:life := life.
+    m:angle := @expr(mote:rng:fraction * tau).
+    m:aim(@expr(mote:rng:fraction * tau), @expr(0.5 + mote:rng:fraction * 1.5)).
+    m }.
+mote:step := { self:via(thing):step. self:life := self:life:dec.
+    self:life:equals(#0):ifTrue({ self:alive := false }) }.
+mote:paint := {
+    self:long:ifElse(
+        { sdl:line(screen, self:x:truncated, self:y:truncated,
+                   @expr(self:x + self:angle:cos * 8.0):truncated,
+                   @expr(self:y + self:angle:sin * 8.0):truncated) },
+        { sdl:fill(screen, self:x:truncated, self:y:truncated, #2, #2) }) }.
 
 ; ---------------------------------------------------------------------------
 ; A sound: pitch in hertz, length in milliseconds, so a game names its tones
