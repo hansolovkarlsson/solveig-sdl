@@ -103,7 +103,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The nine examples, and the engine under six of them
+## The ten examples, and the engine under seven of them
 
 | | |
 | --- | --- |
@@ -116,6 +116,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/invaders.sol`](examples/invaders.sol) | the fourth game: fifty-five invaders, four bunkers that erode, the mystery ship, the 1978 rules |
 | [`examples/spacewar.sol`](examples/spacewar.sol) | the fifth game: two ships, the star's gravity, torpedoes, fuel, hyperspace, the 1962 rules; the machine flies the wedge until `C` |
 | [`examples/lander.sol`](examples/lander.sol) | the sixth game: a throttle, a tank, gravity, a line terrain with three pads, a landing judged by speed and angle |
+| [`examples/tetris.sol`](examples/tetris.sol) | the seventh game: the well, seven pieces, the next one shown, levels by the lines, the 1989 rules; the tune |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -266,6 +267,33 @@ well, that `wrap` would be overridden for the first time (sideways only), that
 the first collision against a line is a few lines of the game, and that the
 binding would be asked for nothing. What the reading of six says is for that
 reading.
+
+**`tetris.sol` is the seventh game, the first drawn from a grid, and the
+second that wanted words.** The 1989 rules, the cartridge's: a well ten wide
+and twenty deep, seven pieces with the next one shown, a fall of so many
+frames a row by level from 48 down to 1, a soft drop that scores a point a
+row, a piece that lands the moment it cannot fall, a turn that does not fit
+and does not happen, lines at 40, 100, 300 or 1,200 times the level after
+them, a cleared line going from the middle outward, a held key that moves
+once and then repeats after sixteen frames every sixth, and a curtain down
+the well when a piece cannot enter. The header predicted that only `engine`,
+`keys`, `font` and `tone` would carry it, because a piece is four cells in a
+grid and the grid is the state, so nothing here has a position, a radius or a
+box and `sprite` is not wanted either, a cell being two fills; that `keys`
+would take its first rule from a game, the repeat, written over the booleans
+it keeps; that this is the second game to name a number, so `letters`,
+`glyphs` and `label` are copied from `lander.sol` with this game's twelve
+letters and the trigger the reading of six wrote down is met; that the tune,
+Korobeiniki whole, is a list of notes stepped by the frame through the
+one-channel policy, one game's; and that the binding would be asked for
+nothing. Checked by a self-playing copy under the dummy drivers that judged
+every turn and column by the lines it made, the holes it left and how low it
+lay, played 204 pieces to 68 lines and level 7, then played at random until
+the curtain; and directly, a vertical I into a four-row gap for 1,200. The
+copy found one thing in the game: a piece could not be turned where it
+enters, because the first `fits` refused a cell above the well, which the
+cartridge allows and does not draw. What the reading of seven says is for
+that reading.
 
 ## Reference
 
