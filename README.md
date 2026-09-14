@@ -96,7 +96,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The eight examples, and the engine under five of them
+## The nine examples, and the engine under six of them
 
 | | |
 | --- | --- |
@@ -108,6 +108,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/asteroids.sol`](examples/asteroids.sol) | the third game: turn, thrust, fire, hyperspace; rocks that split, both saucers, the 1979 rules |
 | [`examples/invaders.sol`](examples/invaders.sol) | the fourth game: fifty-five invaders, four bunkers that erode, the mystery ship, the 1978 rules |
 | [`examples/spacewar.sol`](examples/spacewar.sol) | the fifth game: two ships, the star's gravity, torpedoes, fuel, hyperspace, the 1962 rules; the machine flies the wedge until `C` |
+| [`examples/lander.sol`](examples/lander.sol) | the sixth game: a throttle, a tank, gravity, a line terrain with three pads, a landing judged by speed and angle |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -242,6 +243,22 @@ reading of five that followed moved the whole layer in: `thing`, `draw` and
 `mote` as Asteroids wrote them, and `craft`, the seam between the two games'
 ships, a thing with a heading that turns, burns to a ceiling and is painted
 with a flame. Gravity, hyperspace's two rules, and the pilot stay here.
+
+**`lander.sol` is the sixth game, the first that is not a fight, and the
+first that wanted words.** The shape of the 1979 rules: a random line terrain
+with three pads marked 2, 3 and 5, a throttle on Up and Down as the cabinet
+had, one tank for the whole game, a landing that is on a pad, upright and slow
+and scores fifty times the pad, twenty-five if hard, with fuel for a soft one;
+an abort on Space that levels and burns at a cost. Altitude, the two speeds and
+the fuel are numbers with five words beside them, SCORE, FUEL, ALT, HS and VS,
+twelve letters in the digits' cells made with `sprite:make`, which is the
+first text in any game and the reason the reading of six has something to
+look at. The header predicted that `craft` would carry a third game with a
+throttle rather than a key, that this gravity is a field where Spacewar's is a
+well, that `wrap` would be overridden for the first time (sideways only), that
+the first collision against a line is a few lines of the game, and that the
+binding would be asked for nothing. What the reading of six says is for that
+reading.
 
 ## Reference
 

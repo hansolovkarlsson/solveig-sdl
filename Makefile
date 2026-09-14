@@ -10,6 +10,7 @@
 #   make asteroids      build it and play the third
 #   make invaders       build it and play the fourth
 #   make spacewar       build it and play the fifth
+#   make lander         build it and play the sixth
 #   make clean
 #
 # This is an *extension*, so it is not part of Solveig and does not build with
@@ -62,7 +63,7 @@ INCLUDES = -I$(SOLVEIG)/solum/include
 
 TARGET = $(BUILD)/sdl.so
 
-.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar clean check
+.PHONY: all run bounce circles mandelbrot pong breakout asteroids invaders spacewar lander clean check
 
 all: $(TARGET)
 
@@ -122,6 +123,10 @@ invaders: all
 # The fifth game, the second drawn with lines, and the first with a force.
 spacewar: all
 	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/spacewar.sol
+
+# The sixth game, the first that is not a fight, and the first with words.
+lander: all
+	$(SOLVEIG)/bin/solis --extension=$(TARGET) examples/lander.sol
 
 clean:
 	rm -rf $(BUILD)
