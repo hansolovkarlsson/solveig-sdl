@@ -103,7 +103,7 @@ built against a different SolVM, rebuild it against this one
 You never rebuild `solvm` to add an extension. You do rebuild extensions when
 `solvm` changes.
 
-## The twelve examples, and the engine under nine of them
+## The thirteen examples, and the engine under ten of them
 
 | | |
 | --- | --- |
@@ -119,6 +119,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/tetris.sol`](examples/tetris.sol) | the seventh game: the well, seven pieces, the next one shown, levels by the lines, the 1989 rules; the tune |
 | [`examples/missile.sol`](examples/missile.sol) | the eighth game: the mouse and three buttons, six cities and three bases, missiles that split, bombers, smart bombs, the count, the 1980 rules |
 | [`examples/centipede.sol`](examples/centipede.sol) | the ninth game: the mushroom field, the centipede that splits, the spider, the flea, the scorpion and its poison, the 1981 rules |
+| [`examples/scramble.sol`](examples/scramble.sol) | the tenth game: a world wider than the screen, six stages of ground made ahead of the camera, fuel, rockets, the base, the 1981 rules |
 | [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
@@ -353,6 +354,29 @@ dive, the flea's trail and the split. The one rule the copy found wrong was
 not the cabinet's: extra heads came in from the sides too fast for a wave
 ever to end, and come every seven to twelve seconds now. What the reading
 of nine says is for that reading.
+
+**`scramble.sol` is the tenth game, and the first whose world is wider than
+the screen.** The 1981 rules: the world scrolls under a ship that flies
+where it likes, the ground and the roof are where they are, fuel drains and
+is refilled by hitting a tank, rockets stand and launch, 50 and 80, a tank
+150, a mystery 100, 200 or 300, a UFO 100, a fireball only avoided; six
+stages, open ground, a cave with UFOs, a cave with fireballs, a city of
+towers, a tunnel and the base, which bombed is 800 and the next round
+faster and thirstier; a ship lost starts its stage again, and a stage
+begun again is the same stage, from its own seeded generator. The header
+predicted that a wider world means a camera, one number every paint goes
+through that nothing in the engine has a notion of, so the movers live in
+the world and the subtraction happens at the paint; that the ground is a
+table again but one-dimensional and made ahead of the camera; that `rect`
+carries a fourth game in screen space; that the rockets in flight, the
+bombs, the fireballs and the UFOs are `mover`s bare; that `sprite` carries
+a fourth game and `font:word` a fourth customer in FUEL; and that the
+binding would be asked for nothing. Checked by a self-playing copy under
+the dummy drivers, immortal through three rounds and the base twice, mortal
+to both kinds of crash and the game over; and directly for the ground, a
+touch, and a dry ship falling. Two rules of mine the copy found wrong: the
+keys still lifted a dry ship, and a stage cost more fuel than the tanks on
+it gave. What the reading of ten says is for that reading.
 
 ## Reference
 
