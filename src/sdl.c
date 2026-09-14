@@ -123,6 +123,12 @@ static SolValue prim_start(SolVM *vm, SolValue self, SolValue *a, int argc)
         sol_vm_runtime_error(vm, "sdl:start -- %s", SDL_GetError());
         return SOL_NIL_VAL;
     }
+    /* SDL turns text input on with the video subsystem on a desktop, and on
+       macOS that is what makes a held key raise the accent popup instead of
+       repeating, which is a game's paddle stopping dead. Nothing here answers
+       a text-input event ('other is what a program would see), so the mode is
+       pure cost and is turned off here, once, for every window. */
+    SDL_StopTextInput();
     started = true;
     return SOL_BOOL_VAL(true);
 }

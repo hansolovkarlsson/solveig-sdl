@@ -212,7 +212,7 @@ screen, so calls chain.
 
 | | |
 | --- | --- |
-| `sdl:start` | Opens SDL's video subsystem. Answers `true`, or fails with SDL's own message. Calling it twice is harmless; `poll`, `ticks` and `window` fail until it has been called. |
+| `sdl:start` | Opens SDL's video subsystem, and turns SDL's text-input mode off, since nothing here answers a text-input event and on macOS the mode is what makes a held key raise the accent popup instead of repeating. Answers `true`, or fails with SDL's own message. Calling it twice is harmless; `poll`, `ticks` and `window` fail until it has been called. |
 | `sdl:window(title, #width, #height)` | A window and the renderer that draws into it, as one **screen** — `<sdl screen>` when printed. Falls back to software rendering where there is no acceleration, which is what a headless run gets. |
 
 ### Drawing
