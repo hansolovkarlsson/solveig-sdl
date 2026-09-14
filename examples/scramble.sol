@@ -100,16 +100,15 @@ fireSprite := sprite:make(["..##..", ".####.", "######", "######", ".####.", "..
 baseSprite := sprite:make(["....####....", "...######...", "..##.##.##..", ".##..##..##.", "############", "#.#.#..#.#.#", "############", "##.##..##.##"], pic).
 boomSprite := sprite:make(["#..#..#.", ".#.#.#..", "..###.#.", "##.#.###", "..###.#.", ".#.#.#..", "#..#..#.", "........"], pic).
 
-; The stage's colours: the ground, the roof, and the sky.
-palettes := [[[#200, #120, #40],  [#200, #120, #40],  [#0, #0, #40]],
+; The stage's colours: the ground, the roof, and the sky; the set in use is
+; the stage. (The reading of ten moved `tint` into the engine; the table
+; stays here.)
+tint:sets := [[[#200, #120, #40],  [#200, #120, #40],  [#0, #0, #40]],
              [[#60, #160, #60],   [#60, #160, #60],   [#0, #0, #0]],
              [[#160, #60, #60],   [#160, #60, #60],   [#20, #0, #0]],
              [[#120, #120, #200], [#120, #120, #200], [#0, #0, #30]],
              [[#200, #200, #60],  [#200, #200, #60],  [#0, #0, #0]],
              [[#180, #180, #180], [#180, #180, #180], [#0, #20, #0]]].
-tint := { which | | c |
-    c := palettes:at(stage):at(which).
-    sdl:colour(screen, c:at(#1), c:at(#2), c:at(#3)) }.
 
 ; ---------------------------------------------------------------------------
 ; The ground: a floor and a roof per column, made up as the camera comes
@@ -277,7 +276,7 @@ startStage := {
     ground := ground:first(@expr(stageStart - #1)).
     foes := []. shots := []. bombs := []. booms := [].
     cam := @expr((stageStart - #1) * colW):asFloat.
-    stage := stageOf:value(stageStart).
+    stage := stageOf:value(stageStart). tint:set := stage.
     ship:x := #60. ship:y := #200.
     fuel := fuelFull. fuelIn := fuelRate. fireIn := #90.
     groundTo:value(@expr(cam + fw)).
@@ -337,7 +336,7 @@ groundTo:value(fw).                  ; some ground, to look at before a game
         distance := distance:inc.
         distance:mod(#16):equals(#0):ifTrue({ earn:value(#10) }).
         stageOf:value(colAt:value(cam)):equals(stage):ifFalse({
-            stage := stageOf:value(colAt:value(cam)). fireIn := #90 }).
+            stage := stageOf:value(colAt:value(cam)). tint:set := stage. fireIn := #90 }).
         stage:equals(#3):ifTrue({
             fireIn := fireIn:dec.
             fireIn:lessOrEqual(#0):ifTrue({ throwFire:value. fireIn := @expr(#40 + rng:upTo(#50)) }) }).

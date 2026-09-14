@@ -41,7 +41,8 @@
 ; met: the second word in a second game. (It was, and the reading of seven
 ; moved them: `font:word` is the engine's, with all twenty-six letters, and
 ; this file keeps none; the generator and the two key lists went in at the
-; same reading.) That the tune is a sequence of
+; same reading. The reading of ten, after Centipede's field, made the well
+; a `grid` of the engine's too.) That the tune is a sequence of
 ; tones stepped by the frame through the one-channel policy, the way
 ; Invaders' four-note march is, and is one game's. And that the binding
 ; would be asked for nothing.
@@ -81,7 +82,7 @@ overTone   := tone:make(#80, #600).
 ; -- the game
 state := 'attract.                   ; 'attract  'playing  'clearing  'entry  'curtain  'over
 score := #0. best := #0. lines := #0. level := #0.
-well := [].                          ; rows of cells, row 1 at the top; 0 is empty, else a colour class
+well := nil.                         ; a grid of cells, row 1 at the top; 0 is empty, else a colour class
 current := nil. next := nil. lastKind := #0.
 dropIn := #0. softRows := #0.
 das := #0. lastDir := #0.
@@ -135,7 +136,7 @@ falling:fits := { turn, col, row |
     kinds:at(self:kind):turns:at(turn):inject(true, { ok, c | | ci, cj |
         ci := @expr(col + c:at(#1)). cj := @expr(row + c:at(#2)).
         ok:and({ @expr(ci >= #1 & ci <= cols & cj <= rows) })
-          :and({ cj:lessThan(#1):or({ well:at(cj):at(ci):equals(#0) }) }) }) }.
+          :and({ cj:lessThan(#1):or({ well:at(ci, cj):equals(#0) }) }) }) }.
 
 ; Moved, if it fits; answers whether it did.
 falling:shift := { by |
@@ -153,30 +154,29 @@ falling:rotate := { by | | n, t |
 ; The well
 
 emptyRow := { | r | r := []. cols:repeat({ r:add(#0) }). r }.
-emptyWell := { | w | w := []. rows:repeat({ w:add(emptyRow:value) }). w }.
 
 ; The piece written in, where it lies; a cell above the well is lost.
 land := {
     current:cells:do({ c | | cj |
         cj := @expr(current:row + c:at(#2)).
         cj:greaterOrEqual(#1):ifTrue({
-            well:at(cj):atPut(@expr(current:col + c:at(#1)), current:hue) }) }) }.
+            well:atPut(@expr(current:col + c:at(#1)), cj, current:hue) }) }) }.
 
 ; The rows with no gap, top first.
 fullRows := { | found |
     found := [].
     [#1, rows]:loop({ cj |
-        well:at(cj):inject(true, { ok, v | ok:and({ v:greaterThan(#0) }) }):ifTrue({ found:add(cj) }) }).
+        well:row(cj):inject(true, { ok, v | ok:and({ v:greaterThan(#0) }) }):ifTrue({ found:add(cj) }) }).
     found }.
 
 ; The full rows taken out and as many empty ones put in at the top.
 collapse := { | kept, w |
     kept := [].
-    [#1, rows]:loop({ cj | full:indexOf(cj):isNil:ifTrue({ kept:add(well:at(cj)) }) }).
+    [#1, rows]:loop({ cj | full:indexOf(cj):isNil:ifTrue({ kept:add(well:row(cj)) }) }).
     w := [].
     full:size:repeat({ w:add(emptyRow:value) }).
     kept:do({ r | w:add(r) }).
-    well := w }.
+    well:cells := w }.
 
 ; ---------------------------------------------------------------------------
 ; The tune: notes as a pitch and a length in eighths, twelve frames each,
@@ -238,7 +238,7 @@ enter := {
 
 newGame := {
     score := #0. lines := #0. level := #0.
-    well := emptyWell:value.
+    well := grid:make(cols, rows).
     lastKind := #0. next := deal:value.
     das := #0. lastDir := #0.
     tune:restart.
@@ -290,8 +290,10 @@ fall := {
 ; ---------------------------------------------------------------------------
 ; Drawing. The level's two colours are the cartridge's, cycling by ten;
 ; a white cell has the first for its rim, a coloured one a white corner.
+; (The reading of ten moved `tint` into the engine; the table stays here,
+; and the set in use is the level's.)
 
-palette := [[[#0, #88, #248], [#60, #188, #252]],
+tint:sets := [[[#0, #88, #248], [#60, #188, #252]],
             [[#0, #168, #0], [#184, #248, #24]],
             [[#216, #0, #204], [#248, #120, #248]],
             [[#0, #88, #248], [#88, #216, #84]],
@@ -301,18 +303,13 @@ palette := [[[#0, #88, #248], [#60, #188, #252]],
             [[#104, #68, #252], [#168, #0, #32]],
             [[#0, #88, #248], [#248, #56, #0]],
             [[#248, #56, #0], [#252, #160, #68]]].
-colourOf := { which | | pair |
-    pair := palette:at(level:mod(#10):inc).
-    which:equals(#2):ifElse({ pair:at(#1) }, { pair:at(#2) }) }.
-paintCell := { px, py, hue | | c |
+paintCell := { px, py, hue |
     hue:equals(#1):ifElse(
-        { c := colourOf:value(#2).
-          sdl:colour(screen, c:at(#1), c:at(#2), c:at(#3)).
+        { tint:value(#1).
           sdl:fill(screen, px:inc, py:inc, @expr(cell - #2), @expr(cell - #2)).
           sdl:colour(screen, #252, #252, #252).
           sdl:fill(screen, @expr(px + #4), @expr(py + #4), @expr(cell - #8), @expr(cell - #8)) },
-        { c := colourOf:value(hue).
-          sdl:colour(screen, c:at(#1), c:at(#2), c:at(#3)).
+        { tint:value(hue:dec).
           sdl:fill(screen, px:inc, py:inc, @expr(cell - #2), @expr(cell - #2)).
           sdl:colour(screen, #252, #252, #252).
           sdl:fill(screen, @expr(px + #3), @expr(py + #3), #4, #4) }) }.
@@ -321,7 +318,7 @@ cellAt := { ci, cj, hue |
 
 ; ---------------------------------------------------------------------------
 
-well := emptyWell:value.             ; the empty well, to look at before a game
+well := grid:make(cols, rows).       ; the empty well, to look at before a game
 
 { running }:whileTrue({
     engine:drain({ event |
@@ -344,7 +341,7 @@ well := emptyWell:value.             ; the empty well, to look at before a game
         waitIn := waitIn:dec.
         waitIn:mod(#4):equals(#0):ifTrue({
             i := @expr(waitIn / #4 + #1).
-            full:do({ cj | well:at(cj):atPut(i, #0). well:at(cj):atPut(@expr(cols + #1 - i), #0) }) }).
+            full:do({ cj | well:atPut(i, cj, #0). well:atPut(@expr(cols + #1 - i), cj, #0) }) }).
         waitIn:equals(#0):ifTrue({ scoreLines:value. state := 'entry. waitIn := entryDelay }) }).
     state:equals('entry):ifTrue({
         waitIn := waitIn:dec.
@@ -357,12 +354,13 @@ well := emptyWell:value.             ; the empty well, to look at before a game
         waitIn := waitIn:dec.
         waitIn:equals(#0):ifTrue({
             curtainRow := curtainRow:inc. waitIn := curtainRate.
-            [#1, cols]:loop({ ci | well:at(curtainRow):atPut(ci, #4) }).
+            [#1, cols]:loop({ ci | well:atPut(ci, curtainRow, #4) }).
             curtainRow:equals(rows):ifTrue({
                 state := 'over.
                 score:greaterThan(best):ifTrue({ best := score }) }) }) }).
 
     ; -- one whole frame, then show it
+    tint:set := level:mod(#10):inc.
     sdl:clear(screen, #0, #0, #0).
     sdl:colour(screen, #124, #124, #124).
     sdl:fill(screen, @expr(wellLeft - #4), @expr(wellTop - #4), @expr(cols * cell + #8), #4).
@@ -371,7 +369,7 @@ well := emptyWell:value.             ; the empty well, to look at before a game
     sdl:fill(screen, @expr(wellLeft + cols * cell), wellTop, #4, @expr(rows * cell)).
     [#1, rows]:loop({ cj |
         [#1, cols]:loop({ ci | | v |
-            v := well:at(cj):at(ci).
+            v := well:at(ci, cj).
             v:greaterThan(#0):ifTrue({
                 v:equals(#4):ifElse(
                     { sdl:colour(screen, #124, #124, #124).

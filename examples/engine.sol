@@ -21,7 +21,11 @@
 ; was the first to want words; the seventh was Tetris, which wanted them
 ; again, and the reading of seven moved the alphabet in beside the digits,
 ; and bound the generator and the two key lists that five games and three
-; had each written in a line of their own.
+; had each written in a line of their own. The eighth, ninth and tenth
+; were Missile Command, Centipede and Scramble, and the reading of ten
+; moved two things in: `tint`, the four lines three games had written the
+; same way over a table of colours, and `grid`, the table of counts two
+; games had each made for themselves.
 ;
 ;   engine    opens the window and binds `screen`, `width`, `height`,
 ;             `running` and `frames`; drains the queue, and shows a frame
@@ -29,7 +33,9 @@
 ;   sprite    rows of text compiled once to runs, painted with `fill`
 ;   font      the 3x5 cell digits every score was drawn with, ten sprites,
 ;             and the alphabet two games wrote their words with
+;   tint      the colour in use, from a table of sets the game fills
 ;   rect      an integer rectangle: overlap, edges, clamping, a fill, `alive`
+;   grid      a table of counts, rows by columns, `at(c, r)` and `atPut`
 ;   mover     a float position and velocity, one move a frame, `alive`
 ;   ball      a mover with an integer shadow, `box`, which is a rect,
 ;             crossed once a frame by `settle`
@@ -44,9 +50,10 @@
 ; event on; the `whileTrue` around it is the program's own, as it was in both
 ; games and as the README argues it should be. Nothing here calls back.
 ;
-; **What an included file binds are ordinary globals**, so the twelve names
-; above, the seven the engine binds when it opens, `tau`, `rng` and the two
-; key lists are the whole of what this file takes from the namespace.
+; **What an included file binds are ordinary globals**, so the fourteen
+; names above, the seven the engine binds when it opens, `tau`, `rng` and
+; the two key lists are the whole of what this file takes from the
+; namespace.
 
 ; ---------------------------------------------------------------------------
 ; The frame
@@ -229,6 +236,21 @@ font:word := { text, left, top | | k |
         k := k:inc }) }.
 
 ; ---------------------------------------------------------------------------
+; The colour in use: a table of sets the game fills, each a list of colour
+; triples, and which set is in use, so that a game changes its colours by
+; the wave with one assignment. Three games wrote these four lines the
+; same way and a fourth wrote the two-colour case of them; the tables are
+; theirs, since a game's colours are its own the way its tones are.
+; `value` is a method here like any other, so a game asks `tint:value(n)`.
+
+tint := object:new.
+tint:sets := [[[#248, #248, #248]]].     ; one white, until a game says otherwise
+tint:set := #1.
+tint:value := { which | | c |
+    c := self:sets:at(self:set):at(which).
+    sdl:colour(screen, c:at(#1), c:at(#2), c:at(#3)) }.
+
+; ---------------------------------------------------------------------------
 ; A rectangle, in pixels. Paddles and bricks are rects; a ball's shadow is
 ; one. The overlap test was written four times across the two games and is
 ; written once here.
@@ -252,6 +274,22 @@ rect:clampX := {
 rect:clampY := {
     self:y:lessThan(#0):ifTrue({ self:y := #0 }).
     @expr(self:y > height - self:h):ifTrue({ self:y := @expr(height - self:h) }) }.
+
+; ---------------------------------------------------------------------------
+; A table of counts, rows by columns, one-based both ways and asked with
+; the column first, as a pixel is. Tetris's well and Centipede's field,
+; which each made their own; a row is an array, which is what a game that
+; clears or scans one wants.
+
+grid := object:new.
+grid:cols := #0. grid:rows := #0. grid:cells := nil.
+grid:make := { cols, rows | | g, r |
+    g := self:new. g:cols := cols. g:rows := rows. g:cells := [].
+    rows:repeat({ r := []. cols:repeat({ r:add(#0) }). g:cells:add(r) }).
+    g }.
+grid:at := { c, r | self:cells:at(r):at(c) }.
+grid:atPut := { c, r, v | self:cells:at(r):atPut(c, v) }.
+grid:row := { r | self:cells:at(r) }.
 
 ; ---------------------------------------------------------------------------
 ; A mover: a float position and velocity, one move a frame, and whether it

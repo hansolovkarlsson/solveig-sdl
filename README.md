@@ -120,7 +120,7 @@ You never rebuild `solvm` to add an extension. You do rebuild extensions when
 | [`examples/missile.sol`](examples/missile.sol) | the eighth game: the mouse and three buttons, six cities and three bases, missiles that split, bombers, smart bombs, the count, the 1980 rules |
 | [`examples/centipede.sol`](examples/centipede.sol) | the ninth game: the mushroom field, the centipede that splits, the spider, the flea, the scorpion and its poison, the 1981 rules |
 | [`examples/scramble.sol`](examples/scramble.sol) | the tenth game: a world wider than the screen, six stages of ground made ahead of the camera, fuel, rockets, the base, the 1981 rules |
-| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, a rect, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
+| [`examples/engine.sol`](examples/engine.sol) | what the games have in common: the frame, held keys, a sprite and the font with its alphabet, the colour in use, a rect and a grid, a mover with a ball and a thing, a craft, lines and debris, a tone and its channel |
 | [`examples/kit.sol`](examples/kit.sol) | what they share that a third game might not: the wall bounce and the paddle angle |
 
 ```sh
@@ -376,7 +376,16 @@ the dummy drivers, immortal through three rounds and the base twice, mortal
 to both kinds of crash and the game over; and directly for the ground, a
 touch, and a dry ship falling. Two rules of mine the copy found wrong: the
 keys still lifted a dry ship, and a stage cost more fuel than the tanks on
-it gave. What the reading of ten says is for that reading.
+it gave. The reading of ten that followed moved two things into the engine
+by the two-game rule: `tint`, the four lines Missile, Centipede and
+Scramble had written the same way over a table of colours, with Tetris's
+two-colour case joining, the tables staying in the games; and `grid`, the
+table of counts Tetris's well and Centipede's field had each made for
+themselves. It held two things with the reasons written: the camera, one
+game's and the first thing a game has wanted that the engine cannot say,
+until a second game scrolls; and the reward at every so many points, five
+games' but wanting `score` and `lives` in the engine, which every game
+claims for itself.
 
 ## Reference
 

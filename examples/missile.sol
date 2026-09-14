@@ -77,7 +77,6 @@ flyersLeft := #0. flyerIn := #0. smartsLeft := #0. smartIn := #0.
 bonusCities := #0. nextBonus := #10000.
 countStep := #0. countIn := #0. countBase := #1. countCity := #1.
 countMissiles := #0. countCitiesUp := #0.
-palette := #1.
 i := #0. sky := nil.
 
 ; ---------------------------------------------------------------------------
@@ -92,15 +91,13 @@ bomberSprite := sprite:make(["......##......", "#############.", "##############
 satSprite := sprite:make(["#.#.....#.#", "###.###.###", "#.#.....#.#"], pic).
 
 ; The wave's colours, five sets by pairs of waves: sky, ground, the enemy's
-; trail, yours.
-palettes := [[[#0, #0, #0],     [#232, #200, #40], [#232, #40, #40],  [#40, #120, #248]],
+; trail, yours. (The reading of ten moved `tint` into the engine; the
+; table stays here.)
+tint:sets := [[[#0, #0, #0],     [#232, #200, #40], [#232, #40, #40],  [#40, #120, #248]],
              [[#0, #0, #0],     [#0, #160, #0],    [#248, #248, #0],  [#0, #200, #200]],
              [[#0, #40, #80],   [#248, #120, #0],  [#0, #248, #0],    [#248, #0, #248]],
              [[#40, #0, #40],   [#0, #200, #200],  [#248, #160, #0],  [#248, #248, #248]],
              [[#0, #0, #0],     [#200, #0, #0],    [#248, #248, #248], [#248, #248, #0]]].
-tint := { which | | c |
-    c := palettes:at(palette):at(which).
-    sdl:colour(screen, c:at(#1), c:at(#2), c:at(#3)) }.
 
 ; A filled disc, one horizontal line a row, as circles.sol drew one.
 disc := { cx, cy, r | | dy, hw |
@@ -287,7 +284,7 @@ earn := { points |
 startWave := {
     wave := wave:inc.
     mult := @expr((wave - #1) / #2 + #1). mult:greaterThan(#6):ifTrue({ mult := #6 }).
-    palette := @expr((wave - #1) / #2):mod(#5):inc.
+    tint:set := @expr((wave - #1) / #2):mod(#5):inc.
     toLaunch := @expr(#12 + (wave - #1):mod(#4) * #3 + (wave - #1) / #4 * #2).
     toLaunch:greaterThan(#30):ifTrue({ toLaunch := #30 }).
     launchIn := #30.
@@ -430,7 +427,7 @@ theEnd := { | left |
         countIn:equals(#0):ifTrue({ state := 'attract }) }).
 
     ; -- one whole frame, then show it
-    sky := palettes:at(palette):at(#1).
+    sky := tint:sets:at(tint:set):at(#1).
     sdl:clear(screen, sky:at(#1), sky:at(#2), sky:at(#3)).
     tint:value(#2).
     sdl:fill(screen, #0, ground, width, @expr(height - ground)).
